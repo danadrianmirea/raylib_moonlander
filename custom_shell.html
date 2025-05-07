@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="EN-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="screen-orientation" content="landscape">
+    <meta name="full-screen" content="yes">
+    <meta name="browsermode" content="application">
+
+    <title>raylib web game</title>
+
+    <meta name="title" content="raylib web game">
+    <meta name="description" content="New raylib web videogame, developed using raylib videogames library">
+    <meta name="keywords" content="raylib, programming, examples, html5, C, C++, library, learn, games, videogames">
+
+    <!-- Open Graph metatags for sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="raylib web game">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image" content="https://www.raylib.com/common/raylib_logo.png">
+    <meta property="og:image:alt" content="New raylib web videogame, developed using raylib videogames library" />
+    <meta property="og:site_name" content="raylib - example">
+    <meta property="og:url" content="https://www.raylib.com/games.html">
+    <meta property="og:description" content="New raylib web videogame, developed using raylib videogames library">
+
+    <!-- Twitter metatags for sharing -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@raysan5">
+    <meta name="twitter:title" content="raylib web game">
+    <meta name="twitter:image" content="https://www.raylib.com/common/raylib_logo.png">
+    <meta name="twitter:image:alt" content="New raylib web videogame, developed using raylib videogames library">
+    <meta name="twitter:url" content="https://www.raylib.com/games.html">
+    <meta name="twitter:description" content="New raylib web videogame, developed using raylib videogames library">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="https://www.raylib.com/favicon.ico">
+
+    <style>
+        body { 
+          margin: 0px; 
+          overflow: hidden; 
+          text-align: center;
+          background-color: black;
+        }
+        canvas.emscripten { border: 0px none; background-color: black;}
+        
+    </style>
+    <script type='text/javascript' src="https://cdn.jsdelivr.net/gh/eligrey/FileSaver.js/dist/FileSaver.min.js"> </script>
+    <script type='text/javascript'>
+        function saveFileFromMEMFSToDisk(memoryFSname, localFSname)     // This can be called by C/C++ code
+        {
+            var isSafari = false; // Not supported, navigator.userAgent access is being restricted
+            //var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            var data = FS.readFile(memoryFSname);
+            var blob;
+
+            if (isSafari) blob = new Blob([data.buffer], { type: "application/octet-stream" });
+            else blob = new Blob([data.buffer], { type: "application/octet-binary" });
+
+            // NOTE: SaveAsDialog is a browser setting. For example, in Google Chrome,
+            // in Settings/Advanced/Downloads section you have a setting:
+            // 'Ask where to save each file before downloading' - which you can set true/false.
+            // If you enable this setting it would always ask you and bring the SaveAsDialog
+            saveAs(blob, localFSname);
+        }
+    </script>
+	
+	<script>
+	  function resizeCanvas() {
+		var canvas = document.getElementById('canvas');
+		var screenWidth = window.innerWidth;
+		var screenHeight = window.innerHeight;
+		
+		// Force landscape dimensions
+		if (screenHeight > screenWidth) {
+		  // Portrait mode - use width for both width and height
+		  canvas.width = screenWidth;
+		  canvas.height = screenWidth;
+		} else {
+		  // Landscape mode - use standard dimensions
+		  canvas.width = screenWidth;
+		  canvas.height = screenHeight;
+		}
+
+		if (Module && Module.setCanvasSize) {
+		  Module.setCanvasSize(canvas.width, canvas.height);
+		}
+	  }
+
+	  // Lock screen orientation to landscape
+	  function lockScreenOrientation() {
+		if (screen.orientation && screen.orientation.lock) {
+		  screen.orientation.lock('landscape')
+			.catch(function(error) {
+			  console.log('Orientation lock failed: ' + error);
+			});
+		}
+	  }
+
+	  window.addEventListener('resize', resizeCanvas);
+	  window.addEventListener('load', function() {
+		// Use requestAnimationFrame to ensure the resize happens after the page is fully rendered
+		requestAnimationFrame(function() {
+			resizeCanvas();
+			lockScreenOrientation();
+		});
+	  });
+	  
+	  // Handle orientation changes
+	  window.addEventListener('orientationchange', function() {
+		resizeCanvas();
+		lockScreenOrientation();
+	  });
+	</script>	
+    </head>
+	
+    <body>
+        <canvas class=emscripten id=canvas oncontextmenu=event.preventDefault() tabindex=-1></canvas>
+		
+		<style>
+		  html, body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			background: black;
+            width: 100%;
+			height: 100%;
+		  }
+
+		  body {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+		  }
+
+		  canvas {
+			display: block;
+            
+		  }
+		</style>
+				
+        <p id="output" />
+        <script>
+            // Initialize canvas and resize it immediately
+            var canvas = document.getElementById('canvas');
+            resizeCanvas();
+            
+            var Module = {
+                    print: (function() {
+                        var element = document.getElementById('output');
+                        if (element) element.value = ''; // clear browser cache
+                        return function(text) {
+                            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+                            console.log(text);
+                            if (element) {
+                              element.value += text + "\n";
+                              element.scrollTop = element.scrollHeight; // focus on bottom
+                            }
+                        };
+                    })(),
+                    canvas: (function() {
+                        canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+                        canvas.style.touchAction = 'none';
+                        canvas.style.webkitTouchCallout = 'none';
+                        canvas.style.webkitUserSelect = 'none';
+                        canvas.style.userSelect = 'none';
+                        return canvas;
+                    })(),
+                    onRuntimeInitialized: function() {
+                        // Final resize after everything is initialized
+                        requestAnimationFrame(function() {
+                            resizeCanvas();
+                        });
+                    }
+                };
+            </script>
+        {{{ SCRIPT }}}
+    </body>
+</html>

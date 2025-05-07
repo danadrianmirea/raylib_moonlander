@@ -1,0 +1,11 @@
+build/
+web-build/
+web-build.zip
+*.exe
+*.dsym
+*.idx
+main
+web-build.zip
+index.js
+index.wasm
+*.zip
