@@ -17,7 +17,7 @@ void mainLoop()
 
 int main()
 {
-    InitWindow(gameScreenWidth, gameScreenHeight, "Game of life");
+    InitWindow(gameScreenWidth, gameScreenHeight, "Moonlander");
 #ifndef EMSCRIPTEN_BUILD
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 #endif
