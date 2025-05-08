@@ -72,7 +72,7 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         // Check for landing or crash
         if (y + height >= gameScreenHeight - 50.0f) {
             if (landingPadX - 50.0f <= x + width/2.0f && x + width/2.0f <= landingPadX + 50.0f &&
-                fabsf(velocityX) < 2.0f && fabsf(velocityY) < 2.0f) {
+                fabsf(velocityX) < 0.5f && fabsf(velocityY) < 0.5f) {
                 float normalizedAngle = fmodf(angle + 180.0f, 360.0f) - 180.0f;
                 if (fabsf(normalizedAngle) < 15.0f) {
                     landed = true;
