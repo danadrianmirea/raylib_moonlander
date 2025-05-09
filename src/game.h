@@ -58,6 +58,8 @@ public:
 
     static bool isMobile;
     static float gravity;
+    static constexpr float gravityIncrease = 0.05f;
+    static float velocityLimit;
 
 private:
     bool firstTimeGameStart;

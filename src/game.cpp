@@ -12,11 +12,13 @@
 #include <emscripten.h>
 #endif
 
-// Initialize static members
+#define INITIAL_GRAVITY 1.0f
+
 float Lander::thrust = 0.02f;
 float Lander::rotationSpeed = 1.0f;
 float Lander::fuelConsumption = 0.1f;
-float Game::gravity = 0.3f;  // Initialize gravity
+float Game::gravity = INITIAL_GRAVITY;
+float Game::velocityLimit = 0.5f;  // Non-const static member
 
 bool Game::isMobile = false;
 
@@ -72,7 +74,7 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         // Check for landing or crash
         if (y + height >= gameScreenHeight - 50.0f) {
             if (landingPadX - 50.0f <= x + width/2.0f && x + width/2.0f <= landingPadX + 50.0f &&
-                fabsf(velocityX) < 0.5f && fabsf(velocityY) < 0.5f) {
+                fabsf(velocityX) < Game::velocityLimit && fabsf(velocityY) < Game::velocityLimit) {
                 float normalizedAngle = fmodf(angle + 180.0f, 360.0f) - 180.0f;
                 if (fabsf(normalizedAngle) < 15.0f) {
                     landed = true;
@@ -182,6 +184,7 @@ void Game::InitGame()
     thrust = 0.2f;
     rotationSpeed = 3.0f;
     fuelConsumption = 0.2f;
+    velocityLimit = 0.5f;  // Initialize velocity limit
     inputDelay = 0.3;
     
     // Create lander
@@ -192,6 +195,7 @@ void Game::Reset()
 {
     lives = 3;
     level = 1;
+    gravity = INITIAL_GRAVITY;  // Reset gravity to initial value
     lander->Reset(width, height);
     gameOver = false;
 }
@@ -271,7 +275,7 @@ void Game::HandleInput()
                 lander->Reset(width, height);
             }
         } else if (GetTime() - lander->GetLandingTime() > inputDelay && IsKeyPressed(KEY_ENTER)) {
-            Game::gravity += 0.01f;  // Increase gravity for next level
+            Game::gravity += gravityIncrease;
             level++;
             lander->Reset(width, height);
         }
