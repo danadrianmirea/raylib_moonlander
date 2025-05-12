@@ -10,6 +10,7 @@ public:
     void Draw();
     void Reset(int screenWidth, int screenHeight);
     void Cleanup();
+    void SetTerrainReference(Vector2* terrain, int terrainPoints);
     
     bool IsLanded() const { return landed; }
     bool IsCrashed() const { return crashed; }
@@ -45,6 +46,8 @@ private:
     Sound crashSound;
     bool wasThrusting;
     bool wasRotating;
+    Vector2* terrain;
+    int terrainPoints;
 };
 
 class Game
@@ -98,4 +101,8 @@ private:
 
     // Graphics
     Texture2D backgroundTexture;
+
+    // Terrain
+    static const int TERRAIN_POINTS = 40;
+    Vector2 terrainPoints[TERRAIN_POINTS];
 };

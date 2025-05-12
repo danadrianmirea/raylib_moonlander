@@ -80,6 +80,11 @@ void Lander::Reset(int screenWidth, int screenHeight) {
     wasRotating = false;
 }
 
+void Lander::SetTerrainReference(Vector2* terrain, int terrainPoints) {
+    this->terrain = terrain;
+    this->terrainPoints = terrainPoints;
+}
+
 void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRight) {
     if (!landed && !crashed) {
         // Apply gravity
@@ -126,33 +131,55 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         x += velocityX;
         y += velocityY;
 
-        // Check for landing or crash
-        if (y + height >= gameScreenHeight - 50.0f) {
-            if (landingPadX - 50.0f <= x + width/2.0f && x + width/2.0f <= landingPadX + 50.0f &&
-                fabsf(velocityX) < Game::velocityLimit && fabsf(velocityY) < Game::velocityLimit) {
-                float normalizedAngle = fmodf(angle + 180.0f, 360.0f) - 180.0f;
-                if (fabsf(normalizedAngle) < 15.0f) {
-                    landed = true;
-                    landingTime = GetTime();
-                    PlaySound(landSound);
-                    TraceLog(LOG_INFO, "Land sound played");
-                } else {
-                    crashed = true;
-                    PlaySound(crashSound);
-                    TraceLog(LOG_INFO, "Crash sound played");
-                }
-            } else {
-                crashed = true;
-                PlaySound(crashSound);
-                TraceLog(LOG_INFO, "Crash sound played");
-            }
-        }
-
         // Screen boundaries
         x = fmaxf(0.0f, fminf(gameScreenWidth - width, x));
         if (y < 0.0f) {
             y = 0.0f;
             velocityY = 0.0f;
+        }
+
+        // Check for collision with terrain
+        Vector2 landerCenter = { x + width/2.0f, y + height };
+        float landerBottom = y + height;
+        
+        // Check if we've reached the terrain height
+        for (int i = 0; i < terrainPoints - 1; i++) {
+            // Check if lander is in this segment horizontally
+            if (landerCenter.x >= terrain[i].x && landerCenter.x <= terrain[i+1].x) {
+                // Calculate terrain height at this x position using linear interpolation
+                float t = (landerCenter.x - terrain[i].x) / (terrain[i+1].x - terrain[i].x);
+                float terrainHeight = terrain[i].y * (1 - t) + terrain[i+1].y * t;
+                
+                // If lander has hit the terrain
+                if (landerBottom >= terrainHeight) {
+                    // Check if it's on the landing pad
+                    if (fabsf(landerCenter.x - landingPadX) <= 50.0f &&
+                        fabsf(terrainHeight - (gameScreenHeight - 50.0f)) < 1.0f &&
+                        fabsf(velocityX) < Game::velocityLimit && 
+                        fabsf(velocityY) < Game::velocityLimit) {
+                        
+                        float normalizedAngle = fmodf(angle + 180.0f, 360.0f) - 180.0f;
+                        if (fabsf(normalizedAngle) < 15.0f) {
+                            landed = true;
+                            landingTime = GetTime();
+                            PlaySound(landSound);
+                            TraceLog(LOG_INFO, "Land sound played");
+                        } else {
+                            crashed = true;
+                            PlaySound(crashSound);
+                            TraceLog(LOG_INFO, "Crash sound played - wrong angle");
+                        }
+                    } else {
+                        crashed = true;
+                        PlaySound(crashSound);
+                        TraceLog(LOG_INFO, "Crash sound played - hit terrain");
+                    }
+                    
+                    // Position lander on the terrain surface
+                    y = terrainHeight - height;
+                    break;
+                }
+            }
         }
     }
 }
@@ -273,6 +300,8 @@ void Game::InitGame()
     
     // Create lander
     lander = new Lander(width, height);
+    Randomize(); // Generate terrain
+    lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
 }
 
 void Game::Reset()
@@ -281,6 +310,8 @@ void Game::Reset()
     level = 1;
     gravity = INITIAL_GRAVITY;  // Reset gravity to initial value
     lander->Reset(width, height);
+    Randomize(); // Regenerate terrain
+    lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
     gameOver = false;
 }
 
@@ -375,11 +406,15 @@ void Game::HandleInput()
             } else if (IsKeyPressed(KEY_ENTER)) {
                 lives--;
                 lander->Reset(width, height);
+                Randomize(); // Generate new terrain
+                lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
             }
         } else if (GetTime() - lander->GetLandingTime() > inputDelay && IsKeyPressed(KEY_ENTER)) {
             Game::gravity += gravityIncrease;
             level++;
             lander->Reset(width, height);
+            Randomize(); // Generate new terrain
+            lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
         }
     }
 }
@@ -464,11 +499,29 @@ void Game::Draw()
     ClearBackground(BLACK);
     DrawTexturePro(backgroundTexture, (Rectangle){0, 0, (float)backgroundTexture.width, (float)backgroundTexture.height}, (Rectangle){0, 0, (float)gameScreenWidth, (float)gameScreenHeight}, (Vector2){0, 0}, 0.0f, WHITE);
 
-    
-
     // Draw terrain
-    DrawRectangle(0, gameScreenHeight - 50, gameScreenWidth, 50, GRAY);
-    DrawRectangle(lander->GetLandingPadX() - 50, gameScreenHeight - 50, 100, 5, GREEN);
+    for (int i = 0; i < TERRAIN_POINTS - 1; i++) {
+        // Draw terrain segments
+        DrawLineEx(terrainPoints[i], terrainPoints[i+1], 2.0f, GRAY);
+        
+        // Fill terrain to bottom of screen
+        DrawTriangle(
+            (Vector2){terrainPoints[i].x, terrainPoints[i].y},
+            (Vector2){terrainPoints[i+1].x, terrainPoints[i+1].y},
+            (Vector2){terrainPoints[i].x, (float)gameScreenHeight},
+            GRAY
+        );
+        DrawTriangle(
+            (Vector2){terrainPoints[i+1].x, terrainPoints[i+1].y},
+            (Vector2){terrainPoints[i+1].x, (float)gameScreenHeight},
+            (Vector2){terrainPoints[i].x, (float)gameScreenHeight},
+            GRAY
+        );
+    }
+
+    // Draw landing pad
+    float landingPadX = lander->GetLandingPadX();
+    DrawRectangle(landingPadX - 50, gameScreenHeight - 50, 100, 5, GREEN);
 
     // Draw lander
     lander->Draw();
@@ -602,6 +655,42 @@ std::string Game::FormatWithLeadingZeroes(int number, int width)
 
 void Game::Randomize()
 {
+    // Generate random terrain
+    float segmentWidth = (float)gameScreenWidth / (TERRAIN_POINTS - 1);
+    float minHeight = gameScreenHeight - 150;
+    float maxHeight = gameScreenHeight - 50;
+    float landingPadCenter = lander->GetLandingPadX();
+    float landingPadHalfWidth = 50.0f;
+    float landingPadHeight = gameScreenHeight - 50;
+    
+    // Create flat landing pad area and random terrain elsewhere
+    for (int i = 0; i < TERRAIN_POINTS; i++) {
+        float x = i * segmentWidth;
+        float y;
+        
+        // Determine if this point is in the landing pad area
+        if (x >= landingPadCenter - landingPadHalfWidth - segmentWidth && 
+            x <= landingPadCenter + landingPadHalfWidth + segmentWidth) {
+            // Make it flat for the landing pad (with a slight taper at edges)
+            if (x < landingPadCenter - landingPadHalfWidth) {
+                // Left edge taper
+                float t = (landingPadCenter - landingPadHalfWidth - x) / segmentWidth;
+                y = landingPadHeight - (t * t * 10);
+            } else if (x > landingPadCenter + landingPadHalfWidth) {
+                // Right edge taper
+                float t = (x - (landingPadCenter + landingPadHalfWidth)) / segmentWidth;
+                y = landingPadHeight - (t * t * 10);
+            } else {
+                // Flat landing pad
+                y = landingPadHeight;
+            }
+        } else {
+            // Random height for normal terrain
+            y = GetRandomValue(minHeight, maxHeight);
+        }
+        
+        terrainPoints[i] = (Vector2){ x, y };
+    }
 }
 
 void Lander::Cleanup() {
