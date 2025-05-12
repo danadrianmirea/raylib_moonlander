@@ -228,6 +228,14 @@ Game::Game(int width, int height)
         SetMusicVolume(backgroundMusic, MUSIC_VOLUME);
     }
 
+    // Load background texture
+    backgroundTexture = LoadTexture("data/background.png");
+    if (backgroundTexture.id == 0) {
+        TraceLog(LOG_ERROR, "Failed to load background texture: data/background.png");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded background texture");
+    }
+
     this->width = width;
     this->height = height;
     InitGame();
@@ -242,6 +250,7 @@ Game::~Game()
     UnloadRenderTexture(targetRenderTex);
     UnloadFont(font);
     UnloadMusicStream(backgroundMusic);
+    UnloadTexture(backgroundTexture);
 }
 
 void Game::InitGame()
@@ -453,6 +462,9 @@ void Game::Draw()
     // render everything to a texture
     BeginTextureMode(targetRenderTex);
     ClearBackground(BLACK);
+    DrawTexturePro(backgroundTexture, (Rectangle){0, 0, (float)backgroundTexture.width, (float)backgroundTexture.height}, (Rectangle){0, 0, (float)gameScreenWidth, (float)gameScreenHeight}, (Vector2){0, 0}, 0.0f, WHITE);
+
+    
 
     // Draw terrain
     DrawRectangle(0, gameScreenHeight - 50, gameScreenWidth, 50, GRAY);

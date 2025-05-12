@@ -95,4 +95,7 @@ private:
     // Audio
     Music backgroundMusic;
     bool musicStarted;
+
+    // Graphics
+    Texture2D backgroundTexture;
 };

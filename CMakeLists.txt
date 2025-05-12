@@ -28,6 +28,11 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Add raylib as a subdirectory
 add_subdirectory(${RAYLIB_PATH} ${CMAKE_BINARY_DIR}/raylib)
 
+target_include_directories(${PROJECT_NAME} PRIVATE 
+    ${RAYLIB_PATH}/src
+    ${RAYLIB_PATH}/src/external/glfw/include
+)
+
 # Link with Raylib
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
 
@@ -40,12 +45,13 @@ if(MSVC)
     )
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
-    target_link_options(${PROJECT_NAME} PRIVATE -static -static-libgcc -static-libstdc++)
+    # Remove static linking flags that are causing issues
+    target_link_options(${PROJECT_NAME} PRIVATE -static-libgcc -static-libstdc++)
     # Hide console window in Release builds for MinGW
     set_target_properties(${PROJECT_NAME} PROPERTIES
         LINK_FLAGS_RELEASE "-mwindows"
     )
-    message(STATUS "Building statically linked executable")
+    message(STATUS "Building with static C++ runtime")
 endif()
 
 # Copy font files to build directory
