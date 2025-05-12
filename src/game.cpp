@@ -61,6 +61,14 @@ Lander::Lander(int screenWidth, int screenHeight) {
     } else {
         TraceLog(LOG_INFO, "Successfully loaded lander texture");
     }
+    
+    // Load flame texture
+    flameTexture = LoadTexture("data/blueflame.png");
+    if (flameTexture.id == 0) {
+        TraceLog(LOG_ERROR, "Failed to load flame texture: data/blueflame.png");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded flame texture");
+    }
 
     wasThrusting = false;
     wasRotating = false;
@@ -237,30 +245,36 @@ void Lander::Draw() {
         
         DrawRectangleLines(collisionX, collisionY, scaledWidth, scaledHeight, BLUE);
         DrawCircle(landerX, landerY, 2, RED);
-        DrawCircle(center.x, center.y, 2, BLUE)
+        DrawCircle(center.x, center.y, 2, BLUE);
         #endif
     }
 
     
     // Draw flame if thrusting or rotating
     if (((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) || (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) && fuel > 0) {
-        // Calculate flame position based on the bottom center of the lander
-        Vector2 flameTop = { center.x, center.y + height/2.0f };
-        Vector2 flameLeft = { center.x - 5.0f, center.y + height/2.0f + 15.0f };
-        Vector2 flameRight = { center.x + 5.0f, center.y + height/2.0f + 15.0f };
-        
-        // Rotate flame points around center
-        Vector2 flamePoints[3] = { flameTop, flameLeft, flameRight };
-        for (int i = 0; i < 3; i++) {
-            float dx = flamePoints[i].x - center.x;
-            float dy = flamePoints[i].y - center.y;
-            float cosA = cosf(angle * DEG2RAD);
-            float sinA = sinf(angle * DEG2RAD);
-            flamePoints[i].x = center.x + dx * cosA - dy * sinA;
-            flamePoints[i].y = center.y + dx * sinA + dy * cosA;
+        // Calculate flame position at the bottom center of the lander
+        if (flameTexture.id != 0) {
+            // Calculate flame size while preserving aspect ratio
+            float flameHeight = height * 0.4f;  // Make flame about 70% of lander height
+            float aspectRatio = (float)flameTexture.width / flameTexture.height;
+            float flameWidth = flameHeight * aspectRatio;
+            
+            // Position flame at the bottom of the lander
+            Vector2 flamePos = { center.x, center.y + height/2.0f };
+            const float flameOffset = 10.0f;
+            // Calculate offset position based on angle
+            float offsetDistance = -height/2.0f + flameOffset;  // Distance from center to bottom of lander
+            flamePos.x = center.x + sinf(angle * DEG2RAD) * offsetDistance;
+            flamePos.y = center.y - cosf(angle * DEG2RAD) * offsetDistance;
+            
+            // Define flame rectangle
+            Rectangle flameSource = { 0, 0, (float)flameTexture.width, (float)flameTexture.height };
+            Rectangle flameDest = { flamePos.x, flamePos.y, flameWidth, flameHeight };
+            Vector2 flameOrigin = { flameWidth/2.0f, 0.0f }; // Origin at top-center of flame
+            
+            // Draw the flame texture with the same rotation as the lander
+            DrawTexturePro(flameTexture, flameSource, flameDest, flameOrigin, angle, WHITE);
         }
-
-        DrawTriangleLines(flamePoints[0], flamePoints[1], flamePoints[2], RED);
     }
 }
 
@@ -843,5 +857,8 @@ void Lander::Cleanup() {
     UnloadSound(crashSound);
     if (texture.id != 0) {
         UnloadTexture(texture);
+    }
+    if (flameTexture.id != 0) {
+        UnloadTexture(flameTexture);
     }
 }

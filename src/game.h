@@ -50,6 +50,7 @@ private:
     Vector2* terrain;
     int terrainPoints;
     Texture2D texture; // Lander texture
+    Texture2D flameTexture; // Flame texture
 };
 
 class Game
