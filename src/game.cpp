@@ -29,6 +29,7 @@ float Lander::fuelConsumption = 0.05f;
 float Game::gravity = INITIAL_GRAVITY;
 float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;  // Non-const static member
 bool Game::isMobile = false;
+bool Game::maxGravityReached = false;
 
 // Lander implementation
 Lander::Lander(int screenWidth, int screenHeight) {
@@ -534,6 +535,10 @@ void Game::HandleInput()
             Game::gravity += gravityIncrease;
             if(Game::gravity > MAX_GRAVITY) {
                 Game::gravity = MAX_GRAVITY;
+                Game::maxGravityReached = true;
+            }
+            if(Game::maxGravityReached) {
+              fuelConsumption += fuelConsumptionIncrease;
             }
             level++;
             lander->Reset(width, height);

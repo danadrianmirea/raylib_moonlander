@@ -71,7 +71,9 @@ public:
 
     static bool isMobile;
     static float gravity;
+    static bool maxGravityReached;
     static constexpr float gravityIncrease = 0.15f;
+    static constexpr float fuelConsumptionIncrease = 0.005f;
     static float velocityLimit;
 
 private:
