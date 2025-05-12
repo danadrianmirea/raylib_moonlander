@@ -73,7 +73,7 @@ public:
     static float gravity;
     static bool maxGravityReached;
     static constexpr float gravityIncrease = 0.15f;
-    static constexpr float fuelConsumptionIncrease = 0.005f;
+    static constexpr float fuelConsumptionIncrease = 0.01f;
     static float velocityLimit;
 
 private:

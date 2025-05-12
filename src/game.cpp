@@ -852,20 +852,30 @@ void Game::DrawUI()
     Vector2 fuelSize = MeasureTextEx(font, fuelText, 20, 2);
     DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelSize.x - rightMargin), (float)(startY + lineHeight * 2) }, 20, 2, WHITE);
     
+    // Fuel Consumption
+    const char* fuelConsumptionText = TextFormat("Fuel Use: %.3f", Lander::fuelConsumption);
+    Vector2 fuelConsumptionSize = MeasureTextEx(font, fuelConsumptionText, 20, 2);
+    DrawTextEx(font, fuelConsumptionText, { (float)(gameScreenWidth - fuelConsumptionSize.x - rightMargin), (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
+    
     // Velocity
     const char* velocityText = TextFormat("Velocity X: %.1f Y: %.1f", lander->GetVelocityX(), lander->GetVelocityY());
     Vector2 velocitySize = MeasureTextEx(font, velocityText, 20, 2);
-    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
+    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 4) }, 20, 2, WHITE);
     
     // Angle
     const char* angleText = TextFormat("Angle: %.1f", lander->GetAngle());
     Vector2 angleSize = MeasureTextEx(font, angleText, 20, 2);
-    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 4) }, 20, 2, WHITE);
+    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 5) }, 20, 2, WHITE);
 
     // Gravity
     const char* gravityText = TextFormat("Gravity: %.3f", Game::gravity);
     Vector2 gravitySize = MeasureTextEx(font, gravityText, 20, 2);
-    DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 5) }, 20, 2, WHITE);
+    DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 6) }, 20, 2, WHITE);
+    
+    // Display music controls at the bottom of the screen
+    const char* musicText = TextFormat("Press M to toggle music %s", playingMusic ? "(ON)" : "(OFF)");
+    Vector2 musicTextSize = MeasureTextEx(font, musicText, 16, 1);
+    DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 20) }, 16, 1, WHITE);
 }
 
 std::string Game::FormatWithLeadingZeroes(int number, int width)
