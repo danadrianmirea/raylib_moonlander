@@ -20,8 +20,8 @@ public:
     float GetAngle() const { return angle; }
     float GetLandingPadX() const { return landingPadX; }
     double GetLandingTime() const { return landingTime; }
-    float GetX() const { return x; }
-    float GetY() const { return y; }
+    float GetX() const { return landerX; }
+    float GetY() const { return landerY; }
     float GetWidth() const { return width; }
     float GetHeight() const { return height; }
 
@@ -29,9 +29,10 @@ public:
     static float thrust;
     static float rotationSpeed;
     static float fuelConsumption;
+    static constexpr float collisionScale = 0.8f; // Scale factor for collision box
 
 private:
-    float x, y;
+    float landerX, landerY;
     float velocityX, velocityY;
     float angle;
     float fuel;
@@ -48,6 +49,7 @@ private:
     bool wasRotating;
     Vector2* terrain;
     int terrainPoints;
+    Texture2D texture; // Lander texture
 };
 
 class Game

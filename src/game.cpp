@@ -18,6 +18,8 @@
 #define INITIAL_VELOCITY_LIMIT 0.8f
 #define MUSIC_VOLUME 0.2f
 
+//#define DEBUG_COLLISION
+
 float Lander::thrust = 0.02f;
 float Lander::rotationSpeed = 1.0f;
 float Lander::fuelConsumption = 0.1f;
@@ -51,6 +53,14 @@ Lander::Lander(int screenWidth, int screenHeight) {
         TraceLog(LOG_INFO, "Successfully loaded crash sound");
         SetSoundVolume(crashSound, 1.0f);  // Set volume to 100%
     }
+    
+    // Load lander texture
+    texture = LoadTexture("data/lander.png");
+    if (texture.id == 0) {
+        TraceLog(LOG_ERROR, "Failed to load lander texture: data/lander.png");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded lander texture");
+    }
 
     wasThrusting = false;
     wasRotating = false;
@@ -58,16 +68,26 @@ Lander::Lander(int screenWidth, int screenHeight) {
 }
 
 void Lander::Reset(int screenWidth, int screenHeight) {
-    x = screenWidth / 2.0f;
-    y = 50.0f;  // Start higher up
+    landerX = screenWidth / 2.0f;
+    landerY = 50.0f;  // Start higher up
     velocityX = 0.0f;
     velocityY = 0.0f;
     angle = 0.0f;
     fuel = 100.0f;
     landed = false;
     crashed = false;
-    width = 20.0f;
-    height = 30.0f;
+    
+    // Set height and calculate width based on texture aspect ratio
+    height = 60.0f;  // Keep the same height
+    
+    // Calculate width based on texture aspect ratio (256x384)
+    // Original aspect ratio is 256/384 = 2/3
+    // If texture wasn't loaded, use a default width
+    if (texture.id != 0) {
+        width = height * ((float)texture.width / texture.height);
+    } else {
+        width = 20.0f; // Default width if texture failed to load
+    }
     
     // Random landing pad position
     std::random_device rd;
@@ -130,32 +150,41 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         }
 
         // Update position
-        x += velocityX;
-        y += velocityY;
+        landerX += velocityX;
+        landerY += velocityY;
 
         // Screen boundaries
-        x = fmaxf(0.0f, fminf(gameScreenWidth - width, x));
-        if (y < 0.0f) {
-            y = 0.0f;
+        landerX = fmaxf(0.0f, fminf(gameScreenWidth - width, landerX));
+        if (landerY < 0.0f) {
+            landerY = 0.0f;
             velocityY = 0.0f;
         }
 
-        // Check for collision with terrain using rectangular bounds
-        Rectangle landerRect = { x, y, width, height };
-        float landerBottom = y + height;
+        // Create a scaled-down collision rectangle
+        float scaledWidth = width * collisionScale;
+        float scaledHeight = height * collisionScale;
+        // Center the collision box
+        float collisionX = landerX; // - scaledWidth/2.0f;
+        float collisionY = landerY; // - scaledHeight/2.0f;
+        
+        Rectangle collisionRect = { collisionX, collisionY, scaledWidth, scaledHeight };
+        float collisionBottom = collisionY + scaledHeight;
+        
+        // Center point of the collision box for trajectory checks
+        float centerX = collisionX + scaledWidth/2.0f;
         
         // Check if we've reached the terrain height
         for (int i = 0; i < terrainPoints - 1; i++) {
             // Check if lander is in this segment horizontally
-            if (landerRect.x + landerRect.width/2.0f >= terrain[i].x && landerRect.x + landerRect.width/2.0f <= terrain[i+1].x) {
+            if (centerX >= terrain[i].x && centerX <= terrain[i+1].x) {
                 // Calculate terrain height at this x position using linear interpolation
-                float t = (landerRect.x + landerRect.width/2.0f - terrain[i].x) / (terrain[i+1].x - terrain[i].x);
+                float t = (centerX - terrain[i].x) / (terrain[i+1].x - terrain[i].x);
                 float terrainHeight = terrain[i].y * (1 - t) + terrain[i+1].y * t;
                 
                 // If lander has hit the terrain
-                if (landerBottom >= terrainHeight) {
+                if (collisionBottom >= terrainHeight) {
                     // Check if it's on the landing pad
-                    if (fabsf(landerRect.x + landerRect.width/2.0f - landingPadX) <= 50.0f &&
+                    if (fabsf(centerX - landingPadX) <= 50.0f &&
                         fabsf(terrainHeight - (gameScreenHeight - 50.0f)) < 1.0f &&
                         fabsf(velocityX) < Game::velocityLimit && 
                         fabsf(velocityY) < Game::velocityLimit) {
@@ -177,8 +206,8 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                         TraceLog(LOG_INFO, "Crash sound played - hit terrain");
                     }
                     
-                    // Position lander on the terrain surface
-                    y = terrainHeight - height;
+                    // Position lander on the terrain surface, adjusting for the collision box offset
+                    landerY = terrainHeight - scaledHeight - (height - scaledHeight) / 2.0f;
                     break;
                 }
             }
@@ -187,39 +216,31 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
 }
 
 void Lander::Draw() {
-    // Draw lander as a rectangle
-    Rectangle landerRect = { x, y, width, height };
+    // Calculate the center of the lander for rotation
+    Vector2 center = { landerX + width/2.0f, landerY + height/2.0f };
     
-    // Since we're going to use a texture later, we'll just draw a simple rectangle now
-    // that respects the lander's rotation
-    
-    // First, save the rectangle's center
-    Vector2 center = { x + width/2.0f, y + height/2.0f };
-    
-    // Define the four corners of the rectangle
-    Vector2 topLeft = { x, y };
-    Vector2 topRight = { x + width, y };
-    Vector2 bottomRight = { x + width, y + height };
-    Vector2 bottomLeft = { x, y + height };
-    
-    // Points array for drawing
-    Vector2 points[4] = { topLeft, topRight, bottomRight, bottomLeft };
-    
-    // Rotate all points around the center
-    for (int i = 0; i < 4; i++) {
-        float dx = points[i].x - center.x;
-        float dy = points[i].y - center.y;
-        float cosA = cosf(angle * DEG2RAD);
-        float sinA = sinf(angle * DEG2RAD);
-        points[i].x = center.x + dx * cosA - dy * sinA;
-        points[i].y = center.y + dx * sinA + dy * cosA;
+    if (texture.id != 0) {
+        // Draw the lander texture with rotation
+        Rectangle source = { 0, 0, (float)texture.width, (float)texture.height };
+        Rectangle dest = { landerX + width/2.0f, landerY + height/2.0f, width, height };
+        Vector2 origin = { width/2.0f, height/2.0f }; // Origin at the center for rotation
+        
+        // Draw the texture rotated around its center
+        DrawTexturePro(texture, source, dest, origin, angle, WHITE);
+                      
+        // Draw collision box (for debugging)
+        #ifdef DEBUG_COLLISION
+        float scaledWidth = width * collisionScale;
+        float scaledHeight = height * collisionScale;
+        float collisionX = landerX;
+        float collisionY = landerY;
+        
+        DrawRectangleLines(collisionX, collisionY, scaledWidth, scaledHeight, BLUE);
+        DrawCircle(landerX, landerY, 2, RED);
+        DrawCircle(center.x, center.y, 2, BLUE)
+        #endif
     }
-    
-    // Draw the rotated rectangle
-    DrawLineEx(points[0], points[1], 2.0f, WHITE);
-    DrawLineEx(points[1], points[2], 2.0f, WHITE);
-    DrawLineEx(points[2], points[3], 2.0f, WHITE);
-    DrawLineEx(points[3], points[0], 2.0f, WHITE);
+
     
     // Draw flame if thrusting
     if ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) && fuel > 0) {
@@ -623,7 +644,7 @@ void Game::DrawTerrain()
         }
     }
     
-    const float outlineColor = 128;
+    const unsigned char outlineColor = 128;
     for (int i = 0; i < TERRAIN_POINTS - 1; ++i) {
         DrawLineEx(terrainPoints[i], terrainPoints[i+1], 1.0f, {outlineColor, outlineColor, outlineColor, 255});
     }
@@ -818,4 +839,9 @@ void Game::Randomize()
 
 void Lander::Cleanup() {
     UnloadSound(thrustSound);
+    UnloadSound(landSound);
+    UnloadSound(crashSound);
+    if (texture.id != 0) {
+        UnloadTexture(texture);
+    }
 }
