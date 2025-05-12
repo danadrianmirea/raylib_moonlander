@@ -383,6 +383,7 @@ Game::Game(int width, int height)
 
     this->width = width;
     this->height = height;
+    playingMusic = false;
     InitGame();
 }
 
@@ -406,6 +407,7 @@ void Game::InitGame()
     paused = false;
     lostWindowFocus = false;
     gameOver = false;
+    
 
     screenScale = MIN((float)GetScreenWidth() / gameScreenWidth, (float)GetScreenHeight() / gameScreenHeight);
 
@@ -417,6 +419,7 @@ void Game::InitGame()
     fuelConsumption = 0.2f;
     velocityLimit = 0.8f;  // Initialize velocity limit
     inputDelay = 0.3;
+    playingMusic = true;
     
     // Create lander
     lander = new Lander(width, height);
@@ -433,6 +436,7 @@ void Game::Reset()
     Randomize(); // Regenerate terrain
     lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
     gameOver = false;
+    playingMusic = true;
 }
 
 void Game::Update(float dt)
@@ -448,7 +452,7 @@ void Game::Update(float dt)
     bool running = (firstTimeGameStart == false && paused == false && lostWindowFocus == false && isInExitMenu == false && gameOver == false);
 
     // Handle music playback
-    if (!firstTimeGameStart && !musicStarted && backgroundMusic.stream.buffer != NULL) {
+    if (!firstTimeGameStart && !musicStarted && backgroundMusic.stream.buffer != NULL && playingMusic) {
         PlayMusicStream(backgroundMusic);
         musicStarted = true;
         #ifdef DEBUG
@@ -456,7 +460,7 @@ void Game::Update(float dt)
         #endif
     }
     
-    if (musicStarted && backgroundMusic.stream.buffer != NULL) {
+    if (musicStarted && backgroundMusic.stream.buffer != NULL && playingMusic) {
         UpdateMusicStream(backgroundMusic);
         
         // Pause/resume music based on game state
@@ -485,6 +489,15 @@ void Game::HandleInput()
 
         // Update lander
         lander->Update(dt, thrusting, rotatingLeft, rotatingRight);
+
+        if(IsKeyPressed(KEY_M)) {
+          playingMusic = !playingMusic;
+          if(playingMusic) {
+            PlayMusicStream(backgroundMusic);
+          } else {
+            PauseMusicStream(backgroundMusic);
+          }
+        }
     } 
     else // mobile controls
     {

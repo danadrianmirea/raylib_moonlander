@@ -82,6 +82,7 @@ private:
     bool paused;
     bool lostWindowFocus;
     bool gameOver;
+    bool playingMusic;
 
     float screenScale;
     RenderTexture2D targetRenderTex;
