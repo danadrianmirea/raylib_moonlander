@@ -9,279 +9,16 @@
 #include "rlgl.h"
 #include "globals.h"
 #include "game.h"
+#include "lander.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
-//#define DEBUG
-#define INITIAL_GRAVITY 1.0f
-#define MAX_GRAVITY 2.0f
-#define INITIAL_VELOCITY_LIMIT 0.8f
-#define MUSIC_VOLUME 0.2f
-//#define DEBUG_COLLISION
 
-float Lander::thrust = 0.02f;
-float Lander::rotationSpeed = 1.0f;
-float Lander::fuelConsumption = 0.05f;
 float Game::gravity = INITIAL_GRAVITY;
 float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;  
 bool Game::isMobile = false;
 bool Game::maxGravityReached = false;
-
-Lander::Lander(int screenWidth, int screenHeight) {
-    
-    thrustSound = LoadSound("data/thrust.mp3");
-    if (thrustSound.stream.buffer == NULL) {
-        #ifdef DEBUG
-        TraceLog(LOG_ERROR, "Failed to load thrust sound: data/thrust.mp3");
-        #endif
-    } else {
-        #ifdef DEBUG
-        TraceLog(LOG_INFO, "Successfully loaded thrust sound");
-        #endif
-        SetSoundVolume(thrustSound, 1.0f);  
-    }
-
-    landSound = LoadSound("data/land.mp3");
-    if (landSound.stream.buffer == NULL) {
-        #ifdef DEBUG
-        TraceLog(LOG_ERROR, "Failed to load land sound: data/land.mp3");
-        #endif
-    } else {
-        #ifdef DEBUG
-        TraceLog(LOG_INFO, "Successfully loaded land sound");
-        #endif
-        SetSoundVolume(landSound, 1.0f);  
-    }
-
-    crashSound = LoadSound("data/crash.mp3");
-    if (crashSound.stream.buffer == NULL) {
-        #ifdef DEBUG
-        TraceLog(LOG_ERROR, "Failed to load crash sound: data/crash.mp3");
-        #endif
-    } else {
-        #ifdef DEBUG
-        TraceLog(LOG_INFO, "Successfully loaded crash sound");
-        #endif
-        SetSoundVolume(crashSound, 1.0f);  
-    }
-
-    texture = LoadTexture("data/lander.png");
-    if (texture.id == 0) {
-        #ifdef DEBUG
-        TraceLog(LOG_ERROR, "Failed to load lander texture: data/lander.png");
-        #endif
-    } else {
-        #ifdef DEBUG
-        TraceLog(LOG_INFO, "Successfully loaded lander texture");
-        #endif
-    }
-
-    flameTexture = LoadTexture("data/blueflame.png");
-    if (flameTexture.id == 0) {
-        #ifdef DEBUG
-        TraceLog(LOG_ERROR, "Failed to load flame texture: data/blueflame.png");
-        #endif
-    } else {
-        #ifdef DEBUG
-        TraceLog(LOG_INFO, "Successfully loaded flame texture");
-        #endif
-    }
-
-    wasThrusting = false;
-    wasRotating = false;
-    Reset(screenWidth, screenHeight);
-}
-
-void Lander::Reset(int screenWidth, int screenHeight) {
-    landerX = screenWidth / 2.0f;
-    landerY = 50.0f;  
-    velocityX = 0.0f;
-    velocityY = 0.0f;
-    angle = 0.0f;
-    fuel = 100.0f;
-    landed = false;
-    crashed = false;
-    crashPosX = 0.0f;
-    crashPosY = 0.0f;
-
-    height = 60.0f;  
-
-    if (texture.id != 0) {
-        width = height * ((float)texture.width / texture.height);
-    } else {
-        width = 20.0f; 
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> dis(100.0f, screenWidth - 100.0f);
-    landingPadX = dis(gen);
-    landingTime = 0.0;
-
-    StopSound(thrustSound);
-    wasThrusting = false;
-    wasRotating = false;
-}
-
-void Lander::SetTerrainReference(Vector2* terrain, int terrainPoints) {
-    this->terrain = terrain;
-    this->terrainPoints = terrainPoints;
-}
-
-void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRight) {
-    if (!landed && !crashed) {
-        
-        velocityY += Game::gravity * dt;
-
-        bool isRotating = (rotatingLeft || rotatingRight) && fuel > 0;
-        bool shouldPlayThrustSound = (thrusting || isRotating) && fuel > 0;
-
-        if (thrusting && fuel > 0) {
-            velocityX += sinf(angle * DEG2RAD) * thrust;
-            velocityY -= cosf(angle * DEG2RAD) * thrust;
-            fuel = fmaxf(0.0f, fuel - fuelConsumption);
-        }
-
-        if (isRotating) {
-            if (rotatingLeft) {
-                angle = fmodf(angle + rotationSpeed, 360.0f);
-            }
-            if (rotatingRight) {
-                angle = fmodf(angle - rotationSpeed, 360.0f);
-            }
-            
-            fuel = fmaxf(0.0f, fuel - (fuelConsumption * 0.5f));
-        }
-
-        if (shouldPlayThrustSound && thrustSound.stream.buffer != NULL) {
-            if (!wasThrusting && !wasRotating) {
-                PlaySound(thrustSound);
-                #ifdef DEBUG
-                TraceLog(LOG_INFO, "Started playing thrust sound");
-                #endif
-            }
-            wasThrusting = thrusting;
-            wasRotating = isRotating;
-        } else if ((wasThrusting || wasRotating) && thrustSound.stream.buffer != NULL) {
-            StopSound(thrustSound);
-            wasThrusting = false;
-            wasRotating = false;
-            #ifdef DEBUG
-            TraceLog(LOG_INFO, "Stopped thrust sound");
-            #endif
-        }
-
-        landerX += velocityX;
-        landerY += velocityY;
-
-        landerX = fmaxf(0.0f, fminf(gameScreenWidth - width, landerX));
-        if (landerY < 0.0f) {
-            landerY = 0.0f;
-            velocityY = 0.0f;
-        }
-
-        float scaledWidth = width * collisionScale;
-        float scaledHeight = height * collisionScale;
-        
-        float collisionX = landerX; 
-        float collisionY = landerY; 
-        
-        Rectangle collisionRect = { collisionX, collisionY, scaledWidth, scaledHeight };
-        float collisionBottom = collisionY + scaledHeight;
-
-        float centerX = collisionX + scaledWidth/2.0f;
-        float centerY = collisionY + scaledHeight/2.0f;
-
-        for (int i = 0; i < terrainPoints - 1; i++) {
-            
-            if (centerX >= terrain[i].x && centerX <= terrain[i+1].x) {
-                
-                float t = (centerX - terrain[i].x) / (terrain[i+1].x - terrain[i].x);
-                float terrainHeight = terrain[i].y * (1 - t) + terrain[i+1].y * t;
-
-                if (collisionBottom >= terrainHeight) {
-                    
-                    if (fabsf(centerX - landingPadX) <= 50.0f &&
-                        fabsf(terrainHeight - (gameScreenHeight - 50.0f)) < 1.0f &&
-                        fabsf(velocityX) < Game::velocityLimit && 
-                        fabsf(velocityY) < Game::velocityLimit) {
-                        
-                        float normalizedAngle = fmodf(angle + 180.0f, 360.0f) - 180.0f;
-                        if (fabsf(normalizedAngle) < 15.0f) {
-                            landed = true;
-                            landingTime = GetTime();
-                            PlaySound(landSound);
-                            #ifdef DEBUG
-                            TraceLog(LOG_INFO, "Land sound played");
-                            #endif
-                        } else {
-                            crashed = true;
-                            PlaySound(crashSound);
-                            #ifdef DEBUG
-                            TraceLog(LOG_INFO, "Crash sound played - wrong angle");
-                            #endif
-
-                            crashPosX = centerX;
-                            crashPosY = centerY;
-                        }
-                    } else {
-                        crashed = true;
-                        PlaySound(crashSound);
-                        #ifdef DEBUG
-                        TraceLog(LOG_INFO, "Crash sound played - hit terrain");
-                        #endif
-
-                        crashPosX = centerX;
-                        crashPosY = centerY;
-                    }
-
-                    landerY = terrainHeight - scaledHeight - (height - scaledHeight) / 2.0f;
-                    break;
-                }
-            }
-        }
-    }
-}
-
-void Lander::Draw() {
-    
-    if (crashed) return;
-
-    Vector2 center = { landerX + width/2.0f, landerY + height/2.0f };
-    
-    if (texture.id != 0) {
-        
-        Rectangle source = { 0, 0, (float)texture.width, (float)texture.height };
-        Rectangle dest = { landerX + width/2.0f, landerY + height/2.0f, width, height };
-        Vector2 origin = { width/2.0f, height/2.0f }; 
-
-        DrawTexturePro(texture, source, dest, origin, angle, WHITE);
-    }
-
-    if (!crashed && ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) || (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) && fuel > 0) {
-        
-        if (flameTexture.id != 0) {
-            
-            float flameHeight = height * 0.4f;  
-            float aspectRatio = (float)flameTexture.width / flameTexture.height;
-            float flameWidth = flameHeight * aspectRatio;
-
-            Vector2 flamePos = { center.x, center.y + height/2.0f };
-            const float flameOffset = 10.0f;
-            
-            float offsetDistance = -height/2.0f + flameOffset;  
-            flamePos.x = center.x + sinf(angle * DEG2RAD) * offsetDistance;
-            flamePos.y = center.y - cosf(angle * DEG2RAD) * offsetDistance;
-
-            Rectangle flameSource = { 0, 0, (float)flameTexture.width, (float)flameTexture.height };
-            Rectangle flameDest = { flamePos.x, flamePos.y, flameWidth, flameHeight };
-            Vector2 flameOrigin = { flameWidth/2.0f, 0.0f }; 
-
-            DrawTexturePro(flameTexture, flameSource, flameDest, flameOrigin, angle, WHITE);
-        }
-    }
-}
 
 Game::Game(int width, int height)
 {
@@ -403,7 +140,6 @@ void Game::InitGame()
     level = 1;
     thrust = 0.2f;
     rotationSpeed = 3.0f;
-    fuelConsumption = 0.2f;
     velocityLimit = 0.8f;  
     inputDelay = 0.3;
     playingMusic = true;
@@ -538,7 +274,10 @@ void Game::HandleInput()
                 Game::maxGravityReached = true;
             }
             if(Game::maxGravityReached) {
-              fuelConsumption += fuelConsumptionIncrease;
+              Lander::fuelConsumption += fuelConsumptionIncrease;
+              if(Lander::fuelConsumption > MAX_FUEL_CONSUMPTION) {
+                Lander::fuelConsumption = MAX_FUEL_CONSUMPTION;
+              }
             }
             level++;
             lander->Reset(width, height);
@@ -621,8 +360,7 @@ void Game::UpdateUI()
 }
 
 void Game::Draw()
-{
-    
+{    
     BeginTextureMode(targetRenderTex);
     ClearBackground(BLACK);
 
@@ -819,17 +557,8 @@ void Game::DrawUI()
     DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 30) }, 24, 1, WHITE);
 }
 
-std::string Game::FormatWithLeadingZeroes(int number, int width)
-{
-    std::string numberText = std::to_string(number);
-    int leadingZeros = width - numberText.length();
-    numberText = std::string(leadingZeros, '0') + numberText;
-    return numberText;
-}
-
 void Game::Randomize()
-{
-    
+{    
     float segmentWidth = (float)gameScreenWidth / (TERRAIN_POINTS - 1);
     float minHeight = gameScreenHeight - minTerrainHeight;
     float maxHeight = gameScreenHeight - maxTerrainHeight;
@@ -889,18 +618,6 @@ void Game::Randomize()
         }
 
         terrainPoints[i].y = (smoothedPoints[i-1].y + smoothedPoints[i].y + smoothedPoints[i+1].y) / 3.0f;
-    }
-}
-
-void Lander::Cleanup() {
-    UnloadSound(thrustSound);
-    UnloadSound(landSound);
-    UnloadSound(crashSound);
-    if (texture.id != 0) {
-        UnloadTexture(texture);
-    }
-    if (flameTexture.id != 0) {
-        UnloadTexture(flameTexture);
     }
 }
 

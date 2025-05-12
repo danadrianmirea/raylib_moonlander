@@ -19,6 +19,7 @@ set(SOURCES
     src/game.h
     src/globals.cpp
     src/globals.h
+    src/lander.cpp
 )
 
 # Create executable
