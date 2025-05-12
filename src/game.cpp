@@ -140,22 +140,22 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
             velocityY = 0.0f;
         }
 
-        // Check for collision with terrain
-        Vector2 landerCenter = { x + width/2.0f, y + height };
+        // Check for collision with terrain using rectangular bounds
+        Rectangle landerRect = { x, y, width, height };
         float landerBottom = y + height;
         
         // Check if we've reached the terrain height
         for (int i = 0; i < terrainPoints - 1; i++) {
             // Check if lander is in this segment horizontally
-            if (landerCenter.x >= terrain[i].x && landerCenter.x <= terrain[i+1].x) {
+            if (landerRect.x + landerRect.width/2.0f >= terrain[i].x && landerRect.x + landerRect.width/2.0f <= terrain[i+1].x) {
                 // Calculate terrain height at this x position using linear interpolation
-                float t = (landerCenter.x - terrain[i].x) / (terrain[i+1].x - terrain[i].x);
+                float t = (landerRect.x + landerRect.width/2.0f - terrain[i].x) / (terrain[i+1].x - terrain[i].x);
                 float terrainHeight = terrain[i].y * (1 - t) + terrain[i+1].y * t;
                 
                 // If lander has hit the terrain
                 if (landerBottom >= terrainHeight) {
                     // Check if it's on the landing pad
-                    if (fabsf(landerCenter.x - landingPadX) <= 50.0f &&
+                    if (fabsf(landerRect.x + landerRect.width/2.0f - landingPadX) <= 50.0f &&
                         fabsf(terrainHeight - (gameScreenHeight - 50.0f)) < 1.0f &&
                         fabsf(velocityX) < Game::velocityLimit && 
                         fabsf(velocityY) < Game::velocityLimit) {
@@ -187,16 +187,26 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
 }
 
 void Lander::Draw() {
-    // Draw lander
+    // Draw lander as a rectangle
+    Rectangle landerRect = { x, y, width, height };
+    
+    // Since we're going to use a texture later, we'll just draw a simple rectangle now
+    // that respects the lander's rotation
+    
+    // First, save the rectangle's center
     Vector2 center = { x + width/2.0f, y + height/2.0f };
-    Vector2 points[3] = {
-        { x + width/2.0f, y },
-        { x + width, y + height },
-        { x, y + height }
-    };
-
-    // Rotate points around center
-    for (int i = 0; i < 3; i++) {
+    
+    // Define the four corners of the rectangle
+    Vector2 topLeft = { x, y };
+    Vector2 topRight = { x + width, y };
+    Vector2 bottomRight = { x + width, y + height };
+    Vector2 bottomLeft = { x, y + height };
+    
+    // Points array for drawing
+    Vector2 points[4] = { topLeft, topRight, bottomRight, bottomLeft };
+    
+    // Rotate all points around the center
+    for (int i = 0; i < 4; i++) {
         float dx = points[i].x - center.x;
         float dy = points[i].y - center.y;
         float cosA = cosf(angle * DEG2RAD);
@@ -204,19 +214,22 @@ void Lander::Draw() {
         points[i].x = center.x + dx * cosA - dy * sinA;
         points[i].y = center.y + dx * sinA + dy * cosA;
     }
-
-    // Draw the lander with a thicker line
-    DrawTriangleLines(points[0], points[1], points[2], WHITE);
-
+    
+    // Draw the rotated rectangle
+    DrawLineEx(points[0], points[1], 2.0f, WHITE);
+    DrawLineEx(points[1], points[2], 2.0f, WHITE);
+    DrawLineEx(points[2], points[3], 2.0f, WHITE);
+    DrawLineEx(points[3], points[0], 2.0f, WHITE);
+    
     // Draw flame if thrusting
     if ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) && fuel > 0) {
-        Vector2 flamePoints[3] = {
-            { x + width/2.0f, y + height },
-            { x + width/2.0f + 5.0f, y + height + 15.0f },
-            { x + width/2.0f - 5.0f, y + height + 15.0f }
-        };
-
+        // Calculate flame position based on the bottom center of the lander
+        Vector2 flameTop = { center.x, center.y + height/2.0f };
+        Vector2 flameLeft = { center.x - 5.0f, center.y + height/2.0f + 15.0f };
+        Vector2 flameRight = { center.x + 5.0f, center.y + height/2.0f + 15.0f };
+        
         // Rotate flame points around center
+        Vector2 flamePoints[3] = { flameTop, flameLeft, flameRight };
         for (int i = 0; i < 3; i++) {
             float dx = flamePoints[i].x - center.x;
             float dy = flamePoints[i].y - center.y;
