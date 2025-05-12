@@ -71,7 +71,7 @@ public:
 
     static bool isMobile;
     static float gravity;
-    static constexpr float gravityIncrease = 0.05f;
+    static constexpr float gravityIncrease = 0.15f;
     static float velocityLimit;
 
 private:

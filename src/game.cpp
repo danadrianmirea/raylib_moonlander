@@ -16,7 +16,8 @@
 
 //#define DEBUG  // Uncomment this line to enable debug logging
 
-#define INITIAL_GRAVITY 0.6f
+#define INITIAL_GRAVITY 1.0f
+#define MAX_GRAVITY 2.0f
 #define INITIAL_VELOCITY_LIMIT 0.8f
 #define MUSIC_VOLUME 0.2f
 
@@ -24,7 +25,7 @@
 
 float Lander::thrust = 0.02f;
 float Lander::rotationSpeed = 1.0f;
-float Lander::fuelConsumption = 0.1f;
+float Lander::fuelConsumption = 0.05f;
 float Game::gravity = INITIAL_GRAVITY;
 float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;  // Non-const static member
 bool Game::isMobile = false;
@@ -531,6 +532,9 @@ void Game::HandleInput()
             }
         } else if (GetTime() - lander->GetLandingTime() > inputDelay && IsKeyPressed(KEY_ENTER)) {
             Game::gravity += gravityIncrease;
+            if(Game::gravity > MAX_GRAVITY) {
+                Game::gravity = MAX_GRAVITY;
+            }
             level++;
             lander->Reset(width, height);
             Randomize(); // Generate new terrain
