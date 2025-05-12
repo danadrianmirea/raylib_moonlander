@@ -24,12 +24,15 @@ public:
     float GetY() const { return landerY; }
     float GetWidth() const { return width; }
     float GetHeight() const { return height; }
+    float GetCrashPosX() const { return crashPosX; }
+    float GetCrashPosY() const { return crashPosY; }
 
     // Game parameters
     static float thrust;
     static float rotationSpeed;
     static float fuelConsumption;
     static constexpr float collisionScale = 0.8f; // Scale factor for collision box
+
 
 private:
     float landerX, landerY;
@@ -42,6 +45,7 @@ private:
     float height;
     float landingPadX;
     double landingTime;
+    float crashPosX, crashPosY; // Position where crash occurred
     Sound thrustSound;
     Sound landSound;
     Sound crashSound;
@@ -66,6 +70,8 @@ public:
     void Draw();
     void DrawTerrain();
     void DrawUI();
+    void DrawExplosion();
+    void StartExplosion(float x, float y);
     std::string FormatWithLeadingZeroes(int number, int width);
     void Randomize();
 
@@ -110,6 +116,21 @@ private:
     Texture2D backgroundTexture;
     Texture2D terrainTexture;
     Texture2D landingPadTexture;
+    Texture2D explosionTexture;
+
+    // Explosion animation
+    bool explosionActive;
+    bool explosionCompleted;  // Tracks if explosion has been shown for current crash
+    int explosionFramesCounter;
+    int explosionCurrentFrame;
+    int explosionCurrentLine;
+    Rectangle explosionFrameRec;
+    Vector2 explosionPosition;
+
+
+    static constexpr float explosionScale = 1.0f; // Scale factor for explosion
+    static const int EXPLOSION_FRAMES_PER_LINE = 5; // Adjust based on your sprite sheet
+    static const int EXPLOSION_LINES = 5;           // Adjust based on your sprite sheet
 
     const float minTerrainHeight = 250;
     const float maxTerrainHeight = 50;

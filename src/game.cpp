@@ -108,6 +108,8 @@ void Lander::Reset(int screenWidth, int screenHeight) {
     fuel = 100.0f;
     landed = false;
     crashed = false;
+    crashPosX = 0.0f;
+    crashPosY = 0.0f;
     
     // Set height and calculate width based on texture aspect ratio
     height = 60.0f;  // Keep the same height
@@ -208,6 +210,7 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         
         // Center point of the collision box for trajectory checks
         float centerX = collisionX + scaledWidth/2.0f;
+        float centerY = collisionY + scaledHeight/2.0f;
         
         // Check if we've reached the terrain height
         for (int i = 0; i < terrainPoints - 1; i++) {
@@ -239,6 +242,10 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                             #ifdef DEBUG
                             TraceLog(LOG_INFO, "Crash sound played - wrong angle");
                             #endif
+                            
+                            // Store crash position for explosion animation
+                            crashPosX = centerX;
+                            crashPosY = centerY;
                         }
                     } else {
                         crashed = true;
@@ -246,6 +253,10 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                         #ifdef DEBUG
                         TraceLog(LOG_INFO, "Crash sound played - hit terrain");
                         #endif
+                        
+                        // Store crash position for explosion animation
+                        crashPosX = centerX;
+                        crashPosY = centerY;
                     }
                     
                     // Position lander on the terrain surface, adjusting for the collision box offset
@@ -258,6 +269,9 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
 }
 
 void Lander::Draw() {
+    // Don't draw the lander if it has crashed
+    if (crashed) return;
+    
     // Calculate the center of the lander for rotation
     Vector2 center = { landerX + width/2.0f, landerY + height/2.0f };
     
@@ -285,7 +299,7 @@ void Lander::Draw() {
 
     
     // Draw flame if thrusting or rotating
-    if (((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) || (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) && fuel > 0) {
+    if (!crashed && ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) || (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) && fuel > 0) {
         // Calculate flame position at the bottom center of the lander
         if (flameTexture.id != 0) {
             // Calculate flame size while preserving aspect ratio
@@ -317,6 +331,12 @@ Game::Game(int width, int height)
 {
     firstTimeGameStart = true;
     musicStarted = false;
+    explosionActive = false;
+    explosionCompleted = false;
+    explosionFramesCounter = 0;
+    explosionCurrentFrame = 0;
+    explosionCurrentLine = 0;
+    explosionPosition = { 0.0f, 0.0f };
 
 #ifdef __EMSCRIPTEN__
     // Check if we're running on a mobile device
@@ -381,6 +401,23 @@ Game::Game(int width, int height)
         #endif
     }
 
+    // Load explosion texture
+    explosionTexture = LoadTexture("data/explosion.png");
+    if (explosionTexture.id == 0) {
+        #ifdef DEBUG
+        TraceLog(LOG_ERROR, "Failed to load explosion texture: data/explosion.png");
+        #endif
+    } else {
+        #ifdef DEBUG
+        TraceLog(LOG_INFO, "Successfully loaded explosion texture");
+        #endif
+        
+        // Initialize explosion animation frame rectangle
+        float frameWidth = (float)(explosionTexture.width / EXPLOSION_FRAMES_PER_LINE);
+        float frameHeight = (float)(explosionTexture.height / EXPLOSION_LINES);
+        explosionFrameRec = { 0, 0, frameWidth, frameHeight };
+    }
+
     this->width = width;
     this->height = height;
     playingMusic = false;
@@ -399,6 +436,7 @@ Game::~Game()
     UnloadTexture(backgroundTexture);
     UnloadTexture(terrainTexture);
     UnloadTexture(landingPadTexture);
+    UnloadTexture(explosionTexture);
 }
 
 void Game::InitGame()
@@ -407,6 +445,7 @@ void Game::InitGame()
     paused = false;
     lostWindowFocus = false;
     gameOver = false;
+    explosionCompleted = false;
     
 
     screenScale = MIN((float)GetScreenWidth() / gameScreenWidth, (float)GetScreenHeight() / gameScreenHeight);
@@ -432,6 +471,7 @@ void Game::Reset()
     lives = 3;
     level = 1;
     gravity = INITIAL_GRAVITY;  // Reset gravity to initial value
+    explosionCompleted = false;
     lander->Reset(width, height);
     Randomize(); // Regenerate terrain
     lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
@@ -525,6 +565,7 @@ void Game::HandleInput()
                 float angleDiff = fmodf(targetAngle - currentAngle + 180.0f, 360.0f) - 180.0f;
                 
                 bool rotatingLeft = angleDiff > 5.0f;
+                
                 bool rotatingRight = angleDiff < -5.0f;
                 bool thrusting = length > 50.0f; // Only thrust if touch is far enough from lander
                 
@@ -536,6 +577,12 @@ void Game::HandleInput()
     // Handle landing/crash
     if (lander->IsLanded() || lander->IsCrashed()) {
         if (lander->IsCrashed()) {
+            // If this is a new crash, start the explosion animation only once
+            if (!explosionActive && !explosionCompleted) {
+                StartExplosion(lander->GetCrashPosX(), lander->GetCrashPosY());
+                explosionCompleted = true; // Mark that we've shown the explosion for this crash
+            }
+            
             if (lives <= 1) {  // If this crash would end the game
                 gameOver = true;
             } else if (IsKeyPressed(KEY_ENTER)) {
@@ -543,6 +590,7 @@ void Game::HandleInput()
                 lander->Reset(width, height);
                 Randomize(); // Generate new terrain
                 lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
+                explosionCompleted = false; // Reset for next potential crash
             }
         } else if (GetTime() - lander->GetLandingTime() > inputDelay && IsKeyPressed(KEY_ENTER)) {
             Game::gravity += gravityIncrease;
@@ -684,6 +732,9 @@ void Game::Draw()
 
     // Draw lander
     lander->Draw();
+    
+    // Draw explosion if active
+    DrawExplosion();
 
     DrawUI();
 
@@ -874,8 +925,8 @@ void Game::DrawUI()
     
     // Display music controls at the bottom of the screen
     const char* musicText = TextFormat("Press M to toggle music %s", playingMusic ? "(ON)" : "(OFF)");
-    Vector2 musicTextSize = MeasureTextEx(font, musicText, 16, 1);
-    DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 20) }, 16, 1, WHITE);
+    Vector2 musicTextSize = MeasureTextEx(font, musicText, 24, 1);
+    DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 30) }, 24, 1, WHITE);
 }
 
 std::string Game::FormatWithLeadingZeroes(int number, int width)
@@ -973,4 +1024,72 @@ void Lander::Cleanup() {
     if (flameTexture.id != 0) {
         UnloadTexture(flameTexture);
     }
+}
+
+void Game::DrawExplosion()
+{
+    if (!explosionActive) return;
+    
+    // Update explosion animation frame
+    explosionFramesCounter++;
+    
+    if (explosionFramesCounter > 4) {  // Control animation speed
+        explosionCurrentFrame++;
+        
+        if (explosionCurrentFrame >= EXPLOSION_FRAMES_PER_LINE) {
+            explosionCurrentFrame = 0;
+            explosionCurrentLine++;
+            
+            if (explosionCurrentLine >= EXPLOSION_LINES) {
+                // Animation complete
+                explosionCurrentLine = 0;
+                explosionActive = false;
+                return;
+            }
+        }
+        
+        explosionFramesCounter = 0;
+    }
+    
+    // Update frame rectangle based on current animation frame
+    float frameWidth = (float)(explosionTexture.width / EXPLOSION_FRAMES_PER_LINE);
+    float frameHeight = (float)(explosionTexture.height / EXPLOSION_LINES);
+    explosionFrameRec.x = frameWidth * explosionCurrentFrame;
+    explosionFrameRec.y = frameHeight * explosionCurrentLine;
+    
+    // Calculate scaled dimensions for drawing
+    float scaledWidth = frameWidth * explosionScale;
+    float scaledHeight = frameHeight * explosionScale;
+    
+    // Create a destination rectangle with the scaled dimensions
+    Rectangle destRect = {
+        explosionPosition.x,
+        explosionPosition.y,
+        scaledWidth,
+        scaledHeight
+    };
+    
+    // Draw the current explosion frame with scaling
+    DrawTexturePro(explosionTexture, explosionFrameRec, destRect, (Vector2){0, 0}, 0.0f, WHITE);
+}
+
+void Game::StartExplosion(float x, float y)
+{
+    // Activate explosion and reset animation
+    explosionActive = true;
+    explosionCurrentFrame = 0;
+    explosionCurrentLine = 0;
+    explosionFramesCounter = 0;
+    
+    // Get the base frame dimensions
+    float frameWidth = (float)(explosionTexture.width / EXPLOSION_FRAMES_PER_LINE);
+    float frameHeight = (float)(explosionTexture.height / EXPLOSION_LINES);
+    
+    // Calculate scaled dimensions
+    float scaledWidth = frameWidth * explosionScale;
+    float scaledHeight = frameHeight * explosionScale;
+    
+    // Center explosion at the specified position, accounting for scaling
+    explosionPosition.x = x - scaledWidth/2.0f;
+    explosionPosition.y = y - scaledHeight/2.0f;
 }
