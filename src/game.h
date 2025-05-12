@@ -102,6 +102,9 @@ private:
     // Graphics
     Texture2D backgroundTexture;
 
+    const float minTerrainHeight = 250;
+    const float maxTerrainHeight = 50;
+
     // Terrain
     static const int TERRAIN_POINTS = 40;
     Vector2 terrainPoints[TERRAIN_POINTS];

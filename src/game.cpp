@@ -657,8 +657,8 @@ void Game::Randomize()
 {
     // Generate random terrain
     float segmentWidth = (float)gameScreenWidth / (TERRAIN_POINTS - 1);
-    float minHeight = gameScreenHeight - 150;
-    float maxHeight = gameScreenHeight - 50;
+    float minHeight = gameScreenHeight - minTerrainHeight;
+    float maxHeight = gameScreenHeight - maxTerrainHeight;
     float landingPadCenter = lander->GetLandingPadX();
     float landingPadHalfWidth = 50.0f;
     float landingPadHeight = gameScreenHeight - 50;
