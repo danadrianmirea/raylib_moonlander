@@ -663,7 +663,7 @@ void Game::Randomize()
     float landingPadHalfWidth = 50.0f;
     float landingPadHeight = gameScreenHeight - 50;
     
-    // Create flat landing pad area and random terrain elsewhere
+    // Step 1: Create initial terrain points (flat landing pad area and random terrain elsewhere)
     for (int i = 0; i < TERRAIN_POINTS; i++) {
         float x = i * segmentWidth;
         float y;
@@ -690,6 +690,43 @@ void Game::Randomize()
         }
         
         terrainPoints[i] = (Vector2){ x, y };
+    }
+    
+    // Step 2: Apply smoothing to non-landing pad areas
+    // Create a temporary copy of terrain points for smoothing
+    Vector2 smoothedPoints[TERRAIN_POINTS];
+    for (int i = 0; i < TERRAIN_POINTS; i++) {
+        smoothedPoints[i] = terrainPoints[i];
+    }
+    
+    // Apply smoothing (moving average) to make terrain less pointy
+    // Skip landing pad area to preserve its flatness
+    for (int i = 1; i < TERRAIN_POINTS - 1; i++) {
+        float x = i * segmentWidth;
+        
+        // Skip smoothing for the landing pad area to preserve its flatness
+        if (x >= landingPadCenter - landingPadHalfWidth - segmentWidth && 
+            x <= landingPadCenter + landingPadHalfWidth + segmentWidth) {
+            continue;
+        }
+        
+        // Apply a simple moving average to smooth the terrain
+        // Use a 3-point window (current point and its neighbors)
+        smoothedPoints[i].y = (terrainPoints[i-1].y + terrainPoints[i].y + terrainPoints[i+1].y) / 3.0f;
+    }
+    
+    // Apply a second pass of smoothing for even smoother terrain
+    for (int i = 1; i < TERRAIN_POINTS - 1; i++) {
+        float x = i * segmentWidth;
+        
+        // Skip smoothing for the landing pad area
+        if (x >= landingPadCenter - landingPadHalfWidth - segmentWidth && 
+            x <= landingPadCenter + landingPadHalfWidth + segmentWidth) {
+            continue;
+        }
+        
+        // Apply smoothing again
+        terrainPoints[i].y = (smoothedPoints[i-1].y + smoothedPoints[i].y + smoothedPoints[i+1].y) / 3.0f;
     }
 }
 
