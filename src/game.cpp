@@ -1033,7 +1033,7 @@ void Game::DrawExplosion()
     // Update explosion animation frame
     explosionFramesCounter++;
     
-    if (explosionFramesCounter > 4) {  // Control animation speed
+    if (explosionFramesCounter > explosionPlaybackSpeed) {  // Control animation speed
         explosionCurrentFrame++;
         
         if (explosionCurrentFrame >= EXPLOSION_FRAMES_PER_LINE) {

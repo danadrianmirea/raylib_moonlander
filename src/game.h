@@ -129,6 +129,7 @@ private:
 
 
     static constexpr float explosionScale = 1.0f; // Scale factor for explosion
+    static constexpr float explosionPlaybackSpeed = 4.0f; // Speed of the explosion
     static const int EXPLOSION_FRAMES_PER_LINE = 5; // Adjust based on your sprite sheet
     static const int EXPLOSION_LINES = 5;           // Adjust based on your sprite sheet
 
