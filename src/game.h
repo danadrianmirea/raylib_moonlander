@@ -61,6 +61,7 @@ public:
     void HandleInput();
     void UpdateUI();
     void Draw();
+    void DrawTerrain();
     void DrawUI();
     std::string FormatWithLeadingZeroes(int number, int width);
     void Randomize();
@@ -101,6 +102,7 @@ private:
 
     // Graphics
     Texture2D backgroundTexture;
+    Texture2D terrainTexture;
 
     const float minTerrainHeight = 250;
     const float maxTerrainHeight = 50;

@@ -3,8 +3,10 @@
 #include <string>
 #include <cmath>  // For sqrtf
 #include <random>
+#include <algorithm> // For std::min
 
 #include "raylib.h"
+#include "rlgl.h"
 #include "globals.h"
 #include "game.h"
 
@@ -262,6 +264,16 @@ Game::Game(int width, int height)
     } else {
         TraceLog(LOG_INFO, "Successfully loaded background texture");
     }
+    
+    // Load terrain texture
+    terrainTexture = LoadTexture("data/moon_surface.png");
+    if (terrainTexture.id == 0) {
+        TraceLog(LOG_ERROR, "Failed to load terrain texture: data/moon_surface.png");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded terrain texture");
+        // Make sure the texture is set to repeat for proper tiling
+        SetTextureWrap(terrainTexture, TEXTURE_WRAP_REPEAT);
+    }
 
     this->width = width;
     this->height = height;
@@ -278,6 +290,7 @@ Game::~Game()
     UnloadFont(font);
     UnloadMusicStream(backgroundMusic);
     UnloadTexture(backgroundTexture);
+    UnloadTexture(terrainTexture);
 }
 
 void Game::InitGame()
@@ -499,29 +512,25 @@ void Game::Draw()
     ClearBackground(BLACK);
     DrawTexturePro(backgroundTexture, (Rectangle){0, 0, (float)backgroundTexture.width, (float)backgroundTexture.height}, (Rectangle){0, 0, (float)gameScreenWidth, (float)gameScreenHeight}, (Vector2){0, 0}, 0.0f, WHITE);
 
-    // Draw terrain
-    for (int i = 0; i < TERRAIN_POINTS - 1; i++) {
-        // Draw terrain segments
-        DrawLineEx(terrainPoints[i], terrainPoints[i+1], 2.0f, GRAY);
-        
-        // Fill terrain to bottom of screen
-        DrawTriangle(
-            (Vector2){terrainPoints[i].x, terrainPoints[i].y},
-            (Vector2){terrainPoints[i+1].x, terrainPoints[i+1].y},
-            (Vector2){terrainPoints[i].x, (float)gameScreenHeight},
-            GRAY
-        );
-        DrawTriangle(
-            (Vector2){terrainPoints[i+1].x, terrainPoints[i+1].y},
-            (Vector2){terrainPoints[i+1].x, (float)gameScreenHeight},
-            (Vector2){terrainPoints[i].x, (float)gameScreenHeight},
-            GRAY
-        );
-    }
+    DrawTerrain();
 
-    // Draw landing pad
+    // Draw landing pad with a metallic look
     float landingPadX = lander->GetLandingPadX();
-    DrawRectangle(landingPadX - 50, gameScreenHeight - 50, 100, 5, GREEN);
+    float padY = gameScreenHeight - 50;
+    float padWidth = 100;
+    float padHeight = 5;
+    
+    // Draw main landing pad with a gradient
+    Color padColorLeft = (Color){ 150, 150, 150, 255 };   // Light gray
+    Color padColorRight = (Color){ 200, 200, 200, 255 };  // Lighter gray
+    DrawRectangleGradientH(landingPadX - padWidth/2, padY, padWidth, padHeight, padColorLeft, padColorRight);
+    
+    // Draw landing pad borders for better visibility
+    DrawRectangleLines(landingPadX - padWidth/2, padY, padWidth, padHeight, GREEN);
+    
+    // Draw landing pad leg supports
+    DrawLine(landingPadX - padWidth/2, padY + padHeight, landingPadX - padWidth/2 + 10, padY + 15, GREEN);
+    DrawLine(landingPadX + padWidth/2, padY + padHeight, landingPadX + padWidth/2 - 10, padY + 15, GREEN);
 
     // Draw lander
     lander->Draw();
@@ -541,6 +550,70 @@ void Game::Draw()
                    (float)gameScreenHeight * screenScale},
         (Vector2){0, 0}, 0.0f, WHITE);
     EndDrawing();
+}
+
+void Game::DrawTerrain()
+{
+    SetTextureFilter(terrainTexture, TEXTURE_FILTER_BILINEAR);
+    SetTextureWrap(terrainTexture, TEXTURE_WRAP_REPEAT);
+    
+    // Improved approach using multiple smaller quads for each segment
+    // This gives better texture mapping and less blockiness
+    for (int i = 0; i < TERRAIN_POINTS - 1; ++i) {
+        float segmentWidth = terrainPoints[i+1].x - terrainPoints[i].x;
+        if (segmentWidth < 1.0f) continue; // Skip very small segments
+        
+        const int subdivisions = 20;
+        float subWidth = segmentWidth / subdivisions;
+        
+        for (int j = 0; j < subdivisions; j++) {
+            float t1 = (float)j / subdivisions;
+            float t2 = (float)(j + 1) / subdivisions;
+            
+            // Interpolate positions between the terrain points
+            float x1 = terrainPoints[i].x + t1 * segmentWidth;
+            float x2 = terrainPoints[i].x + t2 * segmentWidth;
+            float y1 = terrainPoints[i].y + t1 * (terrainPoints[i+1].y - terrainPoints[i].y);
+            float y2 = terrainPoints[i].y + t2 * (terrainPoints[i+1].y - terrainPoints[i].y);
+            
+            // Calculate texture coordinates for better detail visibility
+            // Simple approach: use most of the texture for each segment with minimal tiling
+            
+            // For more visible crater details and less repetition:
+            // 1. Use most of the texture (90%)
+            // 2. Apply minimal movement to avoid obvious pattern repeats
+            float textureVisiblePortion = 0.99f;  // Show 90% of the texture for more detail
+            
+            // Very slight movement across the terrain to maintain continuity but avoid obvious repetition
+            float offsetScale = 0.0001f;  // Very small value to minimize tiling
+            float globalOffsetX = offsetScale * (i * 10 + j);  // Based on segment position
+            float globalOffsetY = offsetScale * i * 5;  // Slight vertical variation
+            
+            // Calculate source rectangle for texture mapping
+            Rectangle source;
+            
+            // Set simple source rectangle - use most of the texture with minimal offsets
+            source.width = (float)terrainTexture.width * textureVisiblePortion;
+            source.height = (float)terrainTexture.height * textureVisiblePortion;
+            
+            // Apply very minimal movement through the texture
+            source.x = fmodf(globalOffsetX, (float)(terrainTexture.width - source.width));
+            source.y = fmodf(globalOffsetY, (float)(terrainTexture.height - source.height));
+            
+            // Destination rectangle for the quad
+            float yTop = std::min(y1, y2);
+            float height = gameScreenHeight - yTop;
+            Rectangle dest = { x1, yTop, x2 - x1, height };
+            
+            // Draw the quad with the moon texture
+            DrawTexturePro(terrainTexture, source, dest, (Vector2){0, 0}, 0, WHITE);
+        }
+    }
+    
+    const float outlineColor = 128;
+    for (int i = 0; i < TERRAIN_POINTS - 1; ++i) {
+        DrawLineEx(terrainPoints[i], terrainPoints[i+1], 1.0f, {outlineColor, outlineColor, outlineColor, 255});
+    }
 }
 
 void Game::DrawUI()
