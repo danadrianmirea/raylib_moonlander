@@ -242,8 +242,8 @@ void Lander::Draw() {
     }
 
     
-    // Draw flame if thrusting
-    if ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) && fuel > 0) {
+    // Draw flame if thrusting or rotating
+    if (((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) || (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) && fuel > 0) {
         // Calculate flame position based on the bottom center of the lander
         Vector2 flameTop = { center.x, center.y + height/2.0f };
         Vector2 flameLeft = { center.x - 5.0f, center.y + height/2.0f + 15.0f };
