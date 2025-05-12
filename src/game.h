@@ -41,6 +41,8 @@ private:
     float landingPadX;
     double landingTime;
     Sound thrustSound;
+    Sound landSound;
+    Sound crashSound;
     bool wasThrusting;
     bool wasRotating;
 };

@@ -14,7 +14,7 @@
 
 #define INITIAL_GRAVITY 0.6f
 #define INITIAL_VELOCITY_LIMIT 0.8f
-#define MUSIC_VOLUME 0.1f
+#define MUSIC_VOLUME 0.2f
 
 float Lander::thrust = 0.02f;
 float Lander::rotationSpeed = 1.0f;
@@ -33,6 +33,23 @@ Lander::Lander(int screenWidth, int screenHeight) {
         TraceLog(LOG_INFO, "Successfully loaded thrust sound");
         SetSoundVolume(thrustSound, 1.0f);  // Set volume to 100%
     }
+
+    landSound = LoadSound("data/land.mp3");
+    if (landSound.stream.buffer == NULL) {
+        TraceLog(LOG_ERROR, "Failed to load land sound: data/land.mp3");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded land sound");
+        SetSoundVolume(landSound, 1.0f);  // Set volume to 100%
+    }
+
+    crashSound = LoadSound("data/crash.mp3");
+    if (crashSound.stream.buffer == NULL) {
+        TraceLog(LOG_ERROR, "Failed to load crash sound: data/crash.mp3");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded crash sound");
+        SetSoundVolume(crashSound, 1.0f);  // Set volume to 100%
+    }
+
     wasThrusting = false;
     wasRotating = false;
     Reset(screenWidth, screenHeight);
@@ -69,7 +86,7 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         velocityY += Game::gravity * dt;
 
         bool isRotating = (rotatingLeft || rotatingRight) && fuel > 0;
-        bool shouldPlaySound = (thrusting || isRotating) && fuel > 0;
+        bool shouldPlayThrustSound = (thrusting || isRotating) && fuel > 0;
 
         // Apply thrust if fuel available
         if (thrusting && fuel > 0) {
@@ -91,7 +108,7 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         }
 
         // Handle sound effects
-        if (shouldPlaySound && thrustSound.stream.buffer != NULL) {
+        if (shouldPlayThrustSound && thrustSound.stream.buffer != NULL) {
             if (!wasThrusting && !wasRotating) {
                 PlaySound(thrustSound);
                 TraceLog(LOG_INFO, "Started playing thrust sound");
@@ -117,11 +134,17 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                 if (fabsf(normalizedAngle) < 15.0f) {
                     landed = true;
                     landingTime = GetTime();
+                    PlaySound(landSound);
+                    TraceLog(LOG_INFO, "Land sound played");
                 } else {
                     crashed = true;
+                    PlaySound(crashSound);
+                    TraceLog(LOG_INFO, "Crash sound played");
                 }
             } else {
                 crashed = true;
+                PlaySound(crashSound);
+                TraceLog(LOG_INFO, "Crash sound played");
             }
         }
 
