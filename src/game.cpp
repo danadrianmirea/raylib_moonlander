@@ -323,6 +323,14 @@ Game::Game(int width, int height)
         SetTextureWrap(terrainTexture, TEXTURE_WRAP_REPEAT);
     }
 
+    // Load landing pad texture
+    landingPadTexture = LoadTexture("data/landing_pad.png");
+    if (landingPadTexture.id == 0) {
+        TraceLog(LOG_ERROR, "Failed to load landing pad texture: data/landing_pad.png");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded landing pad texture");
+    }
+
     this->width = width;
     this->height = height;
     InitGame();
@@ -339,6 +347,7 @@ Game::~Game()
     UnloadMusicStream(backgroundMusic);
     UnloadTexture(backgroundTexture);
     UnloadTexture(terrainTexture);
+    UnloadTexture(landingPadTexture);
 }
 
 void Game::InitGame()
@@ -568,17 +577,38 @@ void Game::Draw()
     float padWidth = 100;
     float padHeight = 5;
     
-    // Draw main landing pad with a gradient
-    Color padColorLeft = (Color){ 150, 150, 150, 255 };   // Light gray
-    Color padColorRight = (Color){ 200, 200, 200, 255 };  // Lighter gray
-    DrawRectangleGradientH(landingPadX - padWidth/2, padY, padWidth, padHeight, padColorLeft, padColorRight);
-    
-    // Draw landing pad borders for better visibility
-    DrawRectangleLines(landingPadX - padWidth/2, padY, padWidth, padHeight, GREEN);
-    
-    // Draw landing pad leg supports
-    DrawLine(landingPadX - padWidth/2, padY + padHeight, landingPadX - padWidth/2 + 10, padY + 15, GREEN);
-    DrawLine(landingPadX + padWidth/2, padY + padHeight, landingPadX + padWidth/2 - 10, padY + 15, GREEN);
+    // Draw landing pad using texture
+    if (landingPadTexture.id != 0) {
+        // Calculate landing pad dimensions, maintaining aspect ratio
+        float aspectRatio = (float)landingPadTexture.width / landingPadTexture.height;
+        float drawHeight = 100.0f; // Adjust this value for desired pad height
+        float drawWidth = drawHeight * aspectRatio;
+        
+
+        Rectangle source = { 0, 0, (float)landingPadTexture.width, (float)landingPadTexture.height };
+        Rectangle dest = { landingPadX - drawWidth/2, padY - drawHeight/2 + 5.0f, drawWidth, drawHeight };
+        
+        // Draw the landing pad texture
+        DrawTexturePro(landingPadTexture, source, dest, (Vector2){0, 0}, 0.0f, WHITE);
+        
+        #ifdef DEBUG_COLLISION
+        // Draw a line representing landing pad collision surface for debugging
+        DrawLine(landingPadX - 50, padY, landingPadX + 50, padY, RED);
+        #endif
+    } else {
+        // Fallback to drawing rectangles if texture failed to load
+        // Draw main landing pad with a gradient
+        Color padColorLeft = (Color){ 150, 150, 150, 255 };   // Light gray
+        Color padColorRight = (Color){ 200, 200, 200, 255 };  // Lighter gray
+        DrawRectangleGradientH(landingPadX - padWidth/2, padY, padWidth, padHeight, padColorLeft, padColorRight);
+        
+        // Draw landing pad borders for better visibility
+        DrawRectangleLines(landingPadX - padWidth/2, padY, padWidth, padHeight, GREEN);
+        
+        // Draw landing pad leg supports
+        DrawLine(landingPadX - padWidth/2, padY + padHeight, landingPadX - padWidth/2 + 10, padY + 15, GREEN);
+        DrawLine(landingPadX + padWidth/2, padY + padHeight, landingPadX + padWidth/2 - 10, padY + 15, GREEN);
+    }
 
     // Draw lander
     lander->Draw();

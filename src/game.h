@@ -106,6 +106,7 @@ private:
     // Graphics
     Texture2D backgroundTexture;
     Texture2D terrainTexture;
+    Texture2D landingPadTexture;
 
     const float minTerrainHeight = 250;
     const float maxTerrainHeight = 50;
