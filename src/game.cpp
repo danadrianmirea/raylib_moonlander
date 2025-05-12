@@ -14,6 +14,8 @@
 #include <emscripten.h>
 #endif
 
+//#define DEBUG  // Uncomment this line to enable debug logging
+
 #define INITIAL_GRAVITY 0.6f
 #define INITIAL_VELOCITY_LIMIT 0.8f
 #define MUSIC_VOLUME 0.2f
@@ -32,42 +34,62 @@ Lander::Lander(int screenWidth, int screenHeight) {
     // Load thrust sound
     thrustSound = LoadSound("data/thrust.mp3");
     if (thrustSound.stream.buffer == NULL) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load thrust sound: data/thrust.mp3");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded thrust sound");
+        #endif
         SetSoundVolume(thrustSound, 1.0f);  // Set volume to 100%
     }
 
     landSound = LoadSound("data/land.mp3");
     if (landSound.stream.buffer == NULL) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load land sound: data/land.mp3");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded land sound");
+        #endif
         SetSoundVolume(landSound, 1.0f);  // Set volume to 100%
     }
 
     crashSound = LoadSound("data/crash.mp3");
     if (crashSound.stream.buffer == NULL) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load crash sound: data/crash.mp3");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded crash sound");
+        #endif
         SetSoundVolume(crashSound, 1.0f);  // Set volume to 100%
     }
     
     // Load lander texture
     texture = LoadTexture("data/lander.png");
     if (texture.id == 0) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load lander texture: data/lander.png");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded lander texture");
+        #endif
     }
     
     // Load flame texture
     flameTexture = LoadTexture("data/blueflame.png");
     if (flameTexture.id == 0) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load flame texture: data/blueflame.png");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded flame texture");
+        #endif
     }
 
     wasThrusting = false;
@@ -146,7 +168,9 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         if (shouldPlayThrustSound && thrustSound.stream.buffer != NULL) {
             if (!wasThrusting && !wasRotating) {
                 PlaySound(thrustSound);
+                #ifdef DEBUG
                 TraceLog(LOG_INFO, "Started playing thrust sound");
+                #endif
             }
             wasThrusting = thrusting;
             wasRotating = isRotating;
@@ -154,7 +178,9 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
             StopSound(thrustSound);
             wasThrusting = false;
             wasRotating = false;
+            #ifdef DEBUG
             TraceLog(LOG_INFO, "Stopped thrust sound");
+            #endif
         }
 
         // Update position
@@ -202,16 +228,22 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                             landed = true;
                             landingTime = GetTime();
                             PlaySound(landSound);
+                            #ifdef DEBUG
                             TraceLog(LOG_INFO, "Land sound played");
+                            #endif
                         } else {
                             crashed = true;
                             PlaySound(crashSound);
+                            #ifdef DEBUG
                             TraceLog(LOG_INFO, "Crash sound played - wrong angle");
+                            #endif
                         }
                     } else {
                         crashed = true;
                         PlaySound(crashSound);
+                        #ifdef DEBUG
                         TraceLog(LOG_INFO, "Crash sound played - hit terrain");
+                        #endif
                     }
                     
                     // Position lander on the terrain surface, adjusting for the collision box offset
@@ -299,26 +331,38 @@ Game::Game(int width, int height)
     // Load background music
     backgroundMusic = LoadMusicStream("data/music.mp3");
     if (backgroundMusic.stream.buffer == NULL) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load music file: data/music.mp3");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded music file");
+        #endif
         SetMusicVolume(backgroundMusic, MUSIC_VOLUME);
     }
 
     // Load background texture
     backgroundTexture = LoadTexture("data/background.png");
     if (backgroundTexture.id == 0) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load background texture: data/background.png");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded background texture");
+        #endif
     }
     
     // Load terrain texture
     terrainTexture = LoadTexture("data/moon_surface.png");
     if (terrainTexture.id == 0) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load terrain texture: data/moon_surface.png");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded terrain texture");
+        #endif
         // Make sure the texture is set to repeat for proper tiling
         SetTextureWrap(terrainTexture, TEXTURE_WRAP_REPEAT);
     }
@@ -326,9 +370,13 @@ Game::Game(int width, int height)
     // Load landing pad texture
     landingPadTexture = LoadTexture("data/landing_pad.png");
     if (landingPadTexture.id == 0) {
+        #ifdef DEBUG
         TraceLog(LOG_ERROR, "Failed to load landing pad texture: data/landing_pad.png");
+        #endif
     } else {
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded landing pad texture");
+        #endif
     }
 
     this->width = width;
@@ -401,7 +449,9 @@ void Game::Update(float dt)
     if (!firstTimeGameStart && !musicStarted && backgroundMusic.stream.buffer != NULL) {
         PlayMusicStream(backgroundMusic);
         musicStarted = true;
+        #ifdef DEBUG
         TraceLog(LOG_INFO, "Started playing background music");
+        #endif
     }
     
     if (musicStarted && backgroundMusic.stream.buffer != NULL) {
