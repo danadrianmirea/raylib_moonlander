@@ -217,7 +217,7 @@ Game::Game(int width, int height)
     targetRenderTex = LoadRenderTexture(gameScreenWidth, gameScreenHeight);
     SetTextureFilter(targetRenderTex.texture, TEXTURE_FILTER_BILINEAR); // Texture scale filter to use
 
-    font = LoadFontEx("Font/monogram.ttf", 64, 0, 0);
+    font = LoadFontEx("Font/OpenSansRegular.ttf", 64, 0, 0);
     
     // Load background music
     backgroundMusic = LoadMusicStream("data/music.mp3");
@@ -495,24 +495,24 @@ void Game::DrawUI()
     float screenX = 0.0f;
     float screenY = 0.0f;
 
-    DrawTextEx(font, "Moonlander", {300, 10}, 34, 2, yellow);
+    DrawTextEx(font, "Moonlander", {400, 10}, 24, 2, WHITE);
 
     if (exitWindowRequested)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawText("Are you sure you want to exit? [Y/N]", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+        DrawTextEx(font, "Are you sure you want to exit? [Y/N]", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
     }
     else if (firstTimeGameStart)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 80}, 0.76f, 20, BLACK);
         if (isMobile) {
-            DrawText("Tap to play", screenX + (gameScreenWidth / 2 - 60), screenY + gameScreenHeight / 2 + 10, 20, yellow);
+            DrawTextEx(font, "Tap to play", {screenX + (gameScreenWidth / 2 - 60), screenY + gameScreenHeight / 2 + 10}, 20, 2, yellow);
         } else {
 #ifndef EMSCRIPTEN_BUILD            
-            DrawText("Press Enter to play", screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 - 10, 20, yellow);
-            DrawText("Alt+Enter: toggle fullscreen", screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 30, 20, yellow);
+            DrawTextEx(font, "Press Enter to play", {screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 - 10}, 20, 2, yellow);
+            DrawTextEx(font, "Alt+Enter: toggle fullscreen", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 30}, 20, 2, yellow);
 #else
-            DrawText("Press Enter to play", screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 + 10, 20, yellow);
+            DrawTextEx(font, "Press Enter to play", {screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 + 10}, 20, 2, yellow);
 #endif
         }
     }
@@ -520,76 +520,76 @@ void Game::DrawUI()
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
 #ifndef EMSCRIPTEN_BUILD
-        DrawText("Game paused, press P to continue", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+        DrawTextEx(font, "Game paused, press P to continue", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
 #else
         if (isMobile) {
-            DrawText("Game paused, tap to continue", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+            DrawTextEx(font, "Game paused, tap to continue", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
         } else {
-            DrawText("Game paused, press P or ESC to continue", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+            DrawTextEx(font, "Game paused, press P or ESC to continue", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
         }
 #endif
     }
     else if (lostWindowFocus)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawText("Game paused, focus window to continue", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+        DrawTextEx(font, "Game paused, focus window to continue", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
     }
     else if (gameOver)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
         if (isMobile) {
-            DrawText("Game over, tap to play again", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+            DrawTextEx(font, "Game over, tap to play again", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
         } else {
-            DrawText("Game over, press Enter to play again", screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2, 20, yellow);
+            DrawTextEx(font, "Game over, press Enter to play again", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
         }
     }
     else if (lander->IsLanded())
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawText("Landing Successful!", screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15, 20, GREEN);
-        DrawText("Press Enter for next level", screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15, 20, WHITE);
+        DrawTextEx(font, "Landing Successful!", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
+        DrawTextEx(font, "Press Enter for next level", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
     }
     else if (lander->IsCrashed() && lives > 0)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawText("Crashed! You lost a life!", screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15, 20, RED);
-        DrawText("Press Enter to try again", screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15, 20, WHITE);
+        DrawTextEx(font, "Crashed! You lost a life!", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15}, 20, 2, RED);
+        DrawTextEx(font, "Press Enter to try again", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
     }
 
     // Calculate right-aligned positions with padding
-    int rightMargin = 70;  // 20px margin + 50px padding
+    int rightMargin = 20;
     int lineHeight = 30;   // Height between lines
     int startY = 10;       // Starting Y position
 
     // Level
     const char* levelText = TextFormat("Level: %d", level);
-    int levelWidth = MeasureText(levelText, 20);
-    DrawTextEx(font, levelText, { (float)(gameScreenWidth - levelWidth - rightMargin), (float)startY }, 20, 2, WHITE);
+    Vector2 levelSize = MeasureTextEx(font, levelText, 20, 2);
+    DrawTextEx(font, levelText, { (float)(gameScreenWidth - levelSize.x - rightMargin), (float)startY }, 20, 2, WHITE);
     
     // Lives
     const char* livesText = TextFormat("Lives: %d", lives);
-    int livesWidth = MeasureText(livesText, 20);
-    DrawTextEx(font, livesText, { (float)(gameScreenWidth - livesWidth - rightMargin), (float)(startY + lineHeight) }, 20, 2, WHITE);
+    Vector2 livesSize = MeasureTextEx(font, livesText, 20, 2);
+    DrawTextEx(font, livesText, { (float)(gameScreenWidth - livesSize.x - rightMargin), (float)(startY + lineHeight) }, 20, 2, WHITE);
     
     // Fuel
     const char* fuelText = TextFormat("Fuel: %.1f", lander->GetFuel());
-    int fuelWidth = MeasureText(fuelText, 20);
-    DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelWidth - rightMargin), (float)(startY + lineHeight * 2) }, 20, 2, WHITE);
+    Vector2 fuelSize = MeasureTextEx(font, fuelText, 20, 2);
+    DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelSize.x - rightMargin), (float)(startY + lineHeight * 2) }, 20, 2, WHITE);
     
     // Velocity
     const char* velocityText = TextFormat("Velocity X: %.1f Y: %.1f", lander->GetVelocityX(), lander->GetVelocityY());
-    int velocityWidth = MeasureText(velocityText, 20);
-    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocityWidth - rightMargin), (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
+    Vector2 velocitySize = MeasureTextEx(font, velocityText, 20, 2);
+    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
     
     // Angle
-    const char* angleText = TextFormat("Angle: %.1f°", lander->GetAngle());
-    int angleWidth = MeasureText(angleText, 20);
-    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleWidth - rightMargin), (float)(startY + lineHeight * 4) }, 20, 2, WHITE);
+    const char* angleText = TextFormat("Angle: %.1f", lander->GetAngle());
+    Vector2 angleSize = MeasureTextEx(font, angleText, 20, 2);
+    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 4) }, 20, 2, WHITE);
 
     // Gravity
     const char* gravityText = TextFormat("Gravity: %.3f", Game::gravity);
-    int gravityWidth = MeasureText(gravityText, 20);
-    DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravityWidth - rightMargin), (float)(startY + lineHeight * 5) }, 20, 2, WHITE);
+    Vector2 gravitySize = MeasureTextEx(font, gravityText, 20, 2);
+    DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 5) }, 20, 2, WHITE);
 }
 
 std::string Game::FormatWithLeadingZeroes(int number, int width)
