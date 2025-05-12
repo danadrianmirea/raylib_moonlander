@@ -24,6 +24,9 @@ int main()
     SetExitKey(KEY_NULL);
     SetTargetFPS(144);
     
+    // Initialize audio device
+    InitAudioDevice();
+    
     game = new Game(gameScreenWidth, gameScreenHeight);
     game->Randomize();
 
@@ -38,6 +41,7 @@ int main()
         mainLoop();
     }
     delete game;
+    CloseAudioDevice();  // Close audio device before closing window
     CloseWindow();
 #endif
 

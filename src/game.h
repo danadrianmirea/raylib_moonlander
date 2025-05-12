@@ -85,4 +85,8 @@ private:
 
     // Game objects
     Lander* lander;
+    
+    // Audio
+    Music backgroundMusic;
+    bool musicStarted;
 };

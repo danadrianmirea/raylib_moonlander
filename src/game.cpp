@@ -12,13 +12,15 @@
 #include <emscripten.h>
 #endif
 
-#define INITIAL_GRAVITY 1.0f
+#define INITIAL_GRAVITY 0.6f
+#define INITIAL_VELOCITY_LIMIT 0.8f
+#define MUSIC_VOLUME 0.1f
 
 float Lander::thrust = 0.02f;
 float Lander::rotationSpeed = 1.0f;
 float Lander::fuelConsumption = 0.1f;
 float Game::gravity = INITIAL_GRAVITY;
-float Game::velocityLimit = 0.5f;  // Non-const static member
+float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;  // Non-const static member
 
 bool Game::isMobile = false;
 
@@ -59,12 +61,16 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
             fuel = fmaxf(0.0f, fuel - fuelConsumption);
         }
 
-        // Handle rotation
-        if (rotatingLeft) {
-            angle = fmodf(angle + rotationSpeed, 360.0f);
-        }
-        if (rotatingRight) {
-            angle = fmodf(angle - rotationSpeed, 360.0f);
+        // Handle rotation - consume fuel for rotation too
+        if ((rotatingLeft || rotatingRight) && fuel > 0) {
+            if (rotatingLeft) {
+                angle = fmodf(angle + rotationSpeed, 360.0f);
+            }
+            if (rotatingRight) {
+                angle = fmodf(angle - rotationSpeed, 360.0f);
+            }
+            // Consume fuel for rotation, but at a lower rate than thrust
+            fuel = fmaxf(0.0f, fuel - (fuelConsumption * 0.5f));
         }
 
         // Update position
@@ -144,6 +150,7 @@ void Lander::Draw() {
 Game::Game(int width, int height)
 {
     firstTimeGameStart = true;
+    musicStarted = false;
 
 #ifdef __EMSCRIPTEN__
     // Check if we're running on a mobile device
@@ -156,6 +163,15 @@ Game::Game(int width, int height)
     SetTextureFilter(targetRenderTex.texture, TEXTURE_FILTER_BILINEAR); // Texture scale filter to use
 
     font = LoadFontEx("Font/monogram.ttf", 64, 0, 0);
+    
+    // Load background music
+    backgroundMusic = LoadMusicStream("data/music.mp3");
+    if (backgroundMusic.stream.buffer == NULL) {
+        TraceLog(LOG_ERROR, "Failed to load music file: data/music.mp3");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded music file");
+        SetMusicVolume(backgroundMusic, MUSIC_VOLUME);
+    }
 
     this->width = width;
     this->height = height;
@@ -167,6 +183,7 @@ Game::~Game()
     delete lander;
     UnloadRenderTexture(targetRenderTex);
     UnloadFont(font);
+    UnloadMusicStream(backgroundMusic);
 }
 
 void Game::InitGame()
@@ -184,7 +201,7 @@ void Game::InitGame()
     thrust = 0.2f;
     rotationSpeed = 3.0f;
     fuelConsumption = 0.2f;
-    velocityLimit = 0.5f;  // Initialize velocity limit
+    velocityLimit = 0.8f;  // Initialize velocity limit
     inputDelay = 0.3;
     
     // Create lander
@@ -211,6 +228,24 @@ void Game::Update(float dt)
     UpdateUI();
 
     bool running = (firstTimeGameStart == false && paused == false && lostWindowFocus == false && isInExitMenu == false && gameOver == false);
+
+    // Handle music playback
+    if (!firstTimeGameStart && !musicStarted && backgroundMusic.stream.buffer != NULL) {
+        PlayMusicStream(backgroundMusic);
+        musicStarted = true;
+        TraceLog(LOG_INFO, "Started playing background music");
+    }
+    
+    if (musicStarted && backgroundMusic.stream.buffer != NULL) {
+        UpdateMusicStream(backgroundMusic);
+        
+        // Pause/resume music based on game state
+        if (paused || lostWindowFocus || isInExitMenu || gameOver) {
+            PauseMusicStream(backgroundMusic);
+        } else {
+            ResumeMusicStream(backgroundMusic);
+        }
+    }
 
     if (running)
     {
