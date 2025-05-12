@@ -17,15 +17,15 @@ void mainLoop()
 
 int main()
 {
+    // Initialize audio device first
+    InitAudioDevice();
+    
     InitWindow(gameScreenWidth, gameScreenHeight, "Moonlander");
 #ifndef EMSCRIPTEN_BUILD
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 #endif
     SetExitKey(KEY_NULL);
     SetTargetFPS(144);
-    
-    // Initialize audio device
-    InitAudioDevice();
     
     game = new Game(gameScreenWidth, gameScreenHeight);
     game->Randomize();

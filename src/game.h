@@ -9,6 +9,7 @@ public:
     void Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRight);
     void Draw();
     void Reset(int screenWidth, int screenHeight);
+    void Cleanup();
     
     bool IsLanded() const { return landed; }
     bool IsCrashed() const { return crashed; }
@@ -39,6 +40,9 @@ private:
     float height;
     float landingPadX;
     double landingTime;
+    Sound thrustSound;
+    bool wasThrusting;
+    bool wasRotating;
 };
 
 class Game

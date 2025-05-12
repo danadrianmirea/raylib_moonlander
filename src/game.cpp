@@ -21,11 +21,20 @@ float Lander::rotationSpeed = 1.0f;
 float Lander::fuelConsumption = 0.1f;
 float Game::gravity = INITIAL_GRAVITY;
 float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;  // Non-const static member
-
 bool Game::isMobile = false;
 
 // Lander implementation
 Lander::Lander(int screenWidth, int screenHeight) {
+    // Load thrust sound
+    thrustSound = LoadSound("data/thrust.mp3");
+    if (thrustSound.stream.buffer == NULL) {
+        TraceLog(LOG_ERROR, "Failed to load thrust sound: data/thrust.mp3");
+    } else {
+        TraceLog(LOG_INFO, "Successfully loaded thrust sound");
+        SetSoundVolume(thrustSound, 1.0f);  // Set volume to 100%
+    }
+    wasThrusting = false;
+    wasRotating = false;
     Reset(screenWidth, screenHeight);
 }
 
@@ -47,12 +56,20 @@ void Lander::Reset(int screenWidth, int screenHeight) {
     std::uniform_real_distribution<float> dis(100.0f, screenWidth - 100.0f);
     landingPadX = dis(gen);
     landingTime = 0.0;
+    
+    // Stop thrust sound if it's playing
+    StopSound(thrustSound);
+    wasThrusting = false;
+    wasRotating = false;
 }
 
 void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRight) {
     if (!landed && !crashed) {
         // Apply gravity
         velocityY += Game::gravity * dt;
+
+        bool isRotating = (rotatingLeft || rotatingRight) && fuel > 0;
+        bool shouldPlaySound = (thrusting || isRotating) && fuel > 0;
 
         // Apply thrust if fuel available
         if (thrusting && fuel > 0) {
@@ -62,7 +79,7 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         }
 
         // Handle rotation - consume fuel for rotation too
-        if ((rotatingLeft || rotatingRight) && fuel > 0) {
+        if (isRotating) {
             if (rotatingLeft) {
                 angle = fmodf(angle + rotationSpeed, 360.0f);
             }
@@ -71,6 +88,21 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
             }
             // Consume fuel for rotation, but at a lower rate than thrust
             fuel = fmaxf(0.0f, fuel - (fuelConsumption * 0.5f));
+        }
+
+        // Handle sound effects
+        if (shouldPlaySound && thrustSound.stream.buffer != NULL) {
+            if (!wasThrusting && !wasRotating) {
+                PlaySound(thrustSound);
+                TraceLog(LOG_INFO, "Started playing thrust sound");
+            }
+            wasThrusting = thrusting;
+            wasRotating = isRotating;
+        } else if ((wasThrusting || wasRotating) && thrustSound.stream.buffer != NULL) {
+            StopSound(thrustSound);
+            wasThrusting = false;
+            wasRotating = false;
+            TraceLog(LOG_INFO, "Stopped thrust sound");
         }
 
         // Update position
@@ -180,7 +212,10 @@ Game::Game(int width, int height)
 
 Game::~Game()
 {
-    delete lander;
+    if (lander != nullptr) {
+        lander->Cleanup();
+        delete lander;
+    }
     UnloadRenderTexture(targetRenderTex);
     UnloadFont(font);
     UnloadMusicStream(backgroundMusic);
@@ -532,4 +567,8 @@ std::string Game::FormatWithLeadingZeroes(int number, int width)
 
 void Game::Randomize()
 {
+}
+
+void Lander::Cleanup() {
+    UnloadSound(thrustSound);
 }
