@@ -27,12 +27,10 @@ public:
     float GetCrashPosX() const { return crashPosX; }
     float GetCrashPosY() const { return crashPosY; }
 
-    // Game parameters
     static float thrust;
     static float rotationSpeed;
     static float fuelConsumption;
-    static constexpr float collisionScale = 0.8f; // Scale factor for collision box
-
+    static constexpr float collisionScale = 0.8f;
 
 private:
     float landerX, landerY;
@@ -45,7 +43,7 @@ private:
     float height;
     float landingPadX;
     double landingTime;
-    float crashPosX, crashPosY; // Position where crash occurred
+    float crashPosX, crashPosY;
     Sound thrustSound;
     Sound landSound;
     Sound crashSound;
@@ -53,8 +51,8 @@ private:
     bool wasRotating;
     Vector2* terrain;
     int terrainPoints;
-    Texture2D texture; // Lander texture
-    Texture2D flameTexture; // Flame texture
+    Texture2D texture;
+    Texture2D flameTexture;
 };
 
 class Game
@@ -97,7 +95,6 @@ private:
     int width;
     int height;
 
-    // Game state
     int lives;
     int level;
     float thrust;
@@ -105,38 +102,32 @@ private:
     float fuelConsumption;
     double inputDelay;
 
-    // Game objects
     Lander* lander;
     
-    // Audio
     Music backgroundMusic;
     bool musicStarted;
 
-    // Graphics
     Texture2D backgroundTexture;
     Texture2D terrainTexture;
     Texture2D landingPadTexture;
     Texture2D explosionTexture;
 
-    // Explosion animation
     bool explosionActive;
-    bool explosionCompleted;  // Tracks if explosion has been shown for current crash
+    bool explosionCompleted;
     int explosionFramesCounter;
     int explosionCurrentFrame;
     int explosionCurrentLine;
     Rectangle explosionFrameRec;
     Vector2 explosionPosition;
 
-
-    static constexpr float explosionScale = 1.0f; // Scale factor for explosion
-    static constexpr float explosionPlaybackSpeed = 4.0f; // Speed of the explosion
-    static const int EXPLOSION_FRAMES_PER_LINE = 5; // Adjust based on your sprite sheet
-    static const int EXPLOSION_LINES = 5;           // Adjust based on your sprite sheet
+    static constexpr float explosionScale = 1.0f;
+    static constexpr float explosionPlaybackSpeed = 4.0f;
+    static const int EXPLOSION_FRAMES_PER_LINE = 5; 
+    static const int EXPLOSION_LINES = 5;           
 
     const float minTerrainHeight = 250;
     const float maxTerrainHeight = 50;
 
-    // Terrain
     static const int TERRAIN_POINTS = 40;
     Vector2 terrainPoints[TERRAIN_POINTS];
 };

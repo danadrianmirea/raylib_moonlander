@@ -17,7 +17,7 @@ void mainLoop()
 
 int main()
 {
-    // Initialize audio device first
+    
     InitAudioDevice();
     
     InitWindow(gameScreenWidth, gameScreenHeight, "Moonlander");
@@ -41,7 +41,7 @@ int main()
         mainLoop();
     }
     delete game;
-    CloseAudioDevice();  // Close audio device before closing window
+    CloseAudioDevice();  
     CloseWindow();
 #endif
 
