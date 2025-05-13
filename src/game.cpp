@@ -631,6 +631,49 @@ void Game::DrawUI()
 
     DrawTextEx(font, "Moonlander", {400, 10}, 24, 2, WHITE);
 
+    // Show fuel warnings when appropriate (only during active gameplay)
+    if (!firstTimeGameStart && !paused && !lostWindowFocus && !isInExitMenu && 
+        !gameOver && !gameWon && !lander->IsLanded() && !lander->IsCrashed()) {
+        float fuelPercentage = lander->GetFuel();
+        
+        // Create a pulsing effect for the warnings
+        float alpha = (sinf((float)GetTime() * 4.0f) + 1.0f) * 0.3f + 0.4f; // Pulse between 0.4 and 1.0 alpha
+        
+        if (fuelPercentage <= 0.0f) {
+            // Out of fuel warning
+            const char* outOfFuelText = "Out of Fuel!";
+            Vector2 textSize = MeasureTextEx(font, outOfFuelText, 28, 2);
+            float boxWidth = textSize.x + 40;
+            float boxHeight = textSize.y + 20;
+            float boxX = gameScreenWidth / 2 - boxWidth / 2;
+            float boxY = gameScreenHeight / 2 - 110;
+            
+            // Draw background box
+            DrawRectangle(boxX, boxY, boxWidth, boxHeight, ColorAlpha(BLACK, 0.7f));
+            DrawRectangleLines(boxX, boxY, boxWidth, boxHeight, ColorAlpha(RED, alpha));
+            
+            DrawTextEx(font, outOfFuelText, 
+                     {(float)(gameScreenWidth / 2 - textSize.x / 2), boxY + 10}, 
+                     28, 2, RED);
+        } else if (fuelPercentage < 35.0f) {
+            // Low fuel warning
+            const char* lowFuelText = "Warning! Low Fuel";
+            Vector2 textSize = MeasureTextEx(font, lowFuelText, 28, 2);
+            float boxWidth = textSize.x + 40;
+            float boxHeight = textSize.y + 20;
+            float boxX = gameScreenWidth / 2 - boxWidth / 2;
+            float boxY = gameScreenHeight / 2 - 110;
+            
+            // Draw background box
+            DrawRectangle(boxX, boxY, boxWidth, boxHeight, ColorAlpha(BLACK, 0.7f));
+            DrawRectangleLines(boxX, boxY, boxWidth, boxHeight, ColorAlpha(YELLOW, alpha));
+            
+            DrawTextEx(font, lowFuelText, 
+                     {(float)(gameScreenWidth / 2 - textSize.x / 2), boxY + 10}, 
+                     28, 2, YELLOW);
+        }
+    }
+
     if (exitWindowRequested)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
