@@ -535,8 +535,8 @@ void Game::Draw()
         
         // Add a help text for thrust
         const char* thrustHelp = "Tap center area for thrust";
-        Vector2 thrustHelpSize = MeasureTextEx(font, thrustHelp, 20, 1);
-        DrawTextEx(font, thrustHelp, { (float)(gameScreenWidth / 2 - thrustHelpSize.x / 2), (float)(gameScreenHeight - 30) }, 20, 1, WHITE);
+        Vector2 thrustHelpSize = MeasureTextEx(font, thrustHelp, 25, 1);
+        DrawTextEx(font, thrustHelp, { (float)(gameScreenWidth / 2 - thrustHelpSize.x / 2), (float)(gameScreenHeight - 30) }, 25, 1, WHITE);
     }
     
     EndTextureMode();
@@ -606,7 +606,7 @@ void Game::DrawUI()
     float screenX = 0.0f;
     float screenY = 0.0f;
 
-    DrawTextEx(font, "Moonlander", {400, 10}, 24, 2, WHITE);
+    DrawTextEx(font, "Moonlander", {400, 10}, 34, 2, WHITE);
 
     // Show fuel warnings when appropriate (only during active gameplay)
     if (!firstTimeGameStart && !paused && !lostWindowFocus && !isInExitMenu && 
@@ -816,37 +816,37 @@ void Game::DrawUI()
     int startY = 10;       
 
     const char* levelText = TextFormat("Level: %d", level);
-    Vector2 levelSize = MeasureTextEx(font, levelText, 20, 2);
-    DrawTextEx(font, levelText, { (float)(gameScreenWidth - levelSize.x - rightMargin), (float)startY }, 20, 2, WHITE);
+    Vector2 levelSize = MeasureTextEx(font, levelText, 25, 2);
+    DrawTextEx(font, levelText, { (float)(gameScreenWidth - levelSize.x - rightMargin), (float)startY }, 25, 2, WHITE);
 
     const char* livesText = TextFormat("Lives: %d", lives);
-    Vector2 livesSize = MeasureTextEx(font, livesText, 20, 2);
-    DrawTextEx(font, livesText, { (float)(gameScreenWidth - livesSize.x - rightMargin), (float)(startY + lineHeight) }, 20, 2, WHITE);
+    Vector2 livesSize = MeasureTextEx(font, livesText, 25, 2);
+    DrawTextEx(font, livesText, { (float)(gameScreenWidth - livesSize.x - rightMargin), (float)(startY + lineHeight) }, 25, 2, WHITE);
 
     const char* fuelText = TextFormat("Fuel: %.1f", lander->GetFuel());
-    Vector2 fuelSize = MeasureTextEx(font, fuelText, 20, 2);
-    DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelSize.x - rightMargin), (float)(startY + lineHeight * 2) }, 20, 2, WHITE);
+    Vector2 fuelSize = MeasureTextEx(font, fuelText, 25, 2);
+    DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelSize.x - rightMargin), (float)(startY + lineHeight * 2) }, 25, 2, WHITE);
 
     const char* fuelConsumptionText = TextFormat("Fuel Use: %.3f", Lander::fuelConsumption);
-    Vector2 fuelConsumptionSize = MeasureTextEx(font, fuelConsumptionText, 20, 2);
-    DrawTextEx(font, fuelConsumptionText, { (float)(gameScreenWidth - fuelConsumptionSize.x - rightMargin), (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
+    Vector2 fuelConsumptionSize = MeasureTextEx(font, fuelConsumptionText, 25, 2);
+    DrawTextEx(font, fuelConsumptionText, { (float)(gameScreenWidth - fuelConsumptionSize.x - rightMargin), (float)(startY + lineHeight * 3) }, 25, 2, WHITE);
 
     const char* velocityText = TextFormat("Velocity X: %.1f Y: %.1f", lander->GetVelocityX(), lander->GetVelocityY());
-    Vector2 velocitySize = MeasureTextEx(font, velocityText, 20, 2);
-    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 4) }, 20, 2, WHITE);
+    Vector2 velocitySize = MeasureTextEx(font, velocityText, 25, 2);
+    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 4) }, 25, 2, WHITE);
 
     const char* angleText = TextFormat("Angle: %.1f", lander->GetAngle());
-    Vector2 angleSize = MeasureTextEx(font, angleText, 20, 2);
-    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 5) }, 20, 2, WHITE);
+    Vector2 angleSize = MeasureTextEx(font, angleText, 25, 2);
+    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 5) }, 25, 2, WHITE);
 
     const char* gravityText = TextFormat("Gravity: %.3f", Game::gravity);
-    Vector2 gravitySize = MeasureTextEx(font, gravityText, 20, 2);
-    DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 6) }, 20, 2, WHITE);
+    Vector2 gravitySize = MeasureTextEx(font, gravityText, 25, 2);
+    DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 6) }, 25, 2, WHITE);
 
     if (!isMobile) {
         const char* musicText = TextFormat("Press M to toggle music %s", playingMusic ? "(ON)" : "(OFF)");
-        Vector2 musicTextSize = MeasureTextEx(font, musicText, 24, 1);
-        DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 30) }, 24, 1, WHITE);
+        Vector2 musicTextSize = MeasureTextEx(font, musicText, 25, 1);
+        DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 30) }, 25, 1, WHITE);
     }
 }
 
