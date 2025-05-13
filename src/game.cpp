@@ -333,8 +333,9 @@ void Game::Update(float dt)
                 }
                 // Progress to next level after landing
                 else if (lander->IsLanded() && GetTime() - lander->GetLandingTime() > inputDelay) {
-                    // Check if player completed level 15
-                    if (level >= 15) {
+                    // Check if player completed the final level (10 for mobile, 15 for desktop)
+                    int winLevel = isMobile ? 10 : 15;
+                    if (level >= winLevel) {
                         gameWon = true;
                     } else {
                         Game::gravity += gravityIncrease;
@@ -390,8 +391,9 @@ void Game::Update(float dt)
             } else if (GetTime() - lander->GetLandingTime() > inputDelay && 
                        (IsKeyPressed(KEY_ENTER) || (isMobile && IsGestureDetected(GESTURE_TAP)))) {
                 
-                // Check if player completed level 15
-                if (level >= 15) {
+                // Check if player completed the final level (10 for mobile, 15 for desktop)
+                int winLevel = isMobile ? 10 : 15;
+                if (level >= winLevel) {
                     gameWon = true;
                     return;
                 }
@@ -678,7 +680,11 @@ void Game::DrawUI()
     else if (gameWon)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawTextEx(font, "Congratulations! You completed all levels!", {screenX + (gameScreenWidth / 2 - 230), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
+        if (isMobile) {
+            DrawTextEx(font, "Congratulations! You completed all 10 levels!", {screenX + (gameScreenWidth / 2 - 230), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
+        } else {
+            DrawTextEx(font, "Congratulations! You completed all 15 levels!", {screenX + (gameScreenWidth / 2 - 230), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
+        }
         if (isMobile) {
             DrawTextEx(font, "Tap to play again", {screenX + (gameScreenWidth / 2 - 90), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
         } else {
