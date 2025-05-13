@@ -807,31 +807,6 @@ void Game::DrawUI()
     Vector2 gravitySize = MeasureTextEx(font, gravityText, 20, 2);
     DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 6) }, 20, 2, WHITE);
 
-    // Debug information for mobile thrust
-    if (isMobile) {
-        // These values are updated in the Update method
-        double currentTime = GetTime();
-        double timeSinceLastThrust = currentTime - debugLastThrustTime;
-        
-        int leftMargin = 20;
-        DrawTextEx(font, TextFormat("Thrust Active: %s", debugThrustActive ? "YES" : "NO"), 
-                  { (float)leftMargin, (float)startY }, 20, 2, debugThrustActive ? GREEN : RED);
-        
-        DrawTextEx(font, TextFormat("Was Thrusting: %s", debugWasThrusting ? "YES" : "NO"), 
-                  { (float)leftMargin, (float)(startY + lineHeight) }, 20, 2, debugWasThrusting ? GREEN : RED);
-        
-        DrawTextEx(font, TextFormat("Time Since Thrust: %.3f", timeSinceLastThrust), 
-                  { (float)leftMargin, (float)(startY + lineHeight * 2) }, 20, 2, WHITE);
-        
-        DrawTextEx(font, TextFormat("Touch Count: %d", debugTouchCount), 
-                  { (float)leftMargin, (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
-        
-        // Show whether we're in the timeout window
-        bool inTimeoutWindow = timeSinceLastThrust < thrustTimeout;
-        DrawTextEx(font, TextFormat("In Timeout: %s (%.3fs)", inTimeoutWindow ? "YES" : "NO", thrustTimeout), 
-                  { (float)leftMargin, (float)(startY + lineHeight * 4) }, 20, 2, inTimeoutWindow ? GREEN : WHITE);
-    }
-
     if (!isMobile) {
         const char* musicText = TextFormat("Press M to toggle music %s", playingMusic ? "(ON)" : "(OFF)");
         Vector2 musicTextSize = MeasureTextEx(font, musicText, 24, 1);
