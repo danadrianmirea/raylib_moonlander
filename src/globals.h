@@ -5,11 +5,11 @@
 //#define DEBUG_COLLISION
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX_FUEL_CONSUMPTION 0.1f
+#define MAX_FUEL_CONSUMPTION 20.0f
 #define INITIAL_GRAVITY 1.0f
 #define MAX_GRAVITY 2.0f
 #define INITIAL_VELOCITY_LIMIT 0.8f
-#define MUSIC_VOLUME 0.2f
+#define MUSIC_VOLUME 0.1f
 
 extern Color black;
 extern Color darkGreen;

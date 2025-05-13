@@ -15,10 +15,17 @@
 #include <emscripten.h>
 #endif
 
-float Game::gravity = INITIAL_GRAVITY;
-float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;  
 bool Game::isMobile = false;
+float Game::gravity = INITIAL_GRAVITY;
 bool Game::maxGravityReached = false;
+float Game::velocityLimit = INITIAL_VELOCITY_LIMIT;
+
+// Debug variables for mobile thrust
+bool debugThrustActive = false;
+double debugLastThrustTime = 0.0;
+int debugTouchCount = 0;
+bool debugWasThrusting = false;
+double thrustTimeout = 0.1; // Allow brief interruptions in touch events (100ms)
 
 Game::Game(int width, int height)
 {
@@ -30,6 +37,7 @@ Game::Game(int width, int height)
     explosionCurrentFrame = 0;
     explosionCurrentLine = 0;
     explosionPosition = { 0.0f, 0.0f };
+    gameWon = false;
 
 #ifdef __EMSCRIPTEN__
     
@@ -132,6 +140,7 @@ void Game::InitGame()
     paused = false;
     lostWindowFocus = false;
     gameOver = false;
+    gameWon = false;
     explosionCompleted = false;
 
     screenScale = MIN((float)GetScreenWidth() / gameScreenWidth, (float)GetScreenHeight() / gameScreenHeight);
@@ -140,7 +149,6 @@ void Game::InitGame()
     level = 1;
     thrust = 0.2f;
     rotationSpeed = 3.0f;
-    velocityLimit = 0.8f;  
     inputDelay = 0.3;
     playingMusic = true;
 
@@ -153,8 +161,11 @@ void Game::Reset()
 {
     lives = 3;
     level = 1;
-    gravity = INITIAL_GRAVITY;  
+    Game::gravity = INITIAL_GRAVITY;  
+    Game::maxGravityReached = false;
+    Game::velocityLimit = INITIAL_VELOCITY_LIMIT;
     explosionCompleted = false;
+    gameWon = false;
     lander->Reset(width, height);
     Randomize(); 
     lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
@@ -194,95 +205,213 @@ void Game::Update(float dt)
 
     if (running)
     {
-        HandleInput();
-    }
-}
+        bool thrusting=false, rotatingLeft=false, rotatingRight=false;
 
-void Game::HandleInput()
-{
-    float dt = GetFrameTime();
+        if(!isMobile) {         
+            thrusting = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
+            rotatingLeft = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
+            rotatingRight = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
 
-    if(!isMobile) { 
-        
-        bool thrusting = IsKeyDown(KEY_UP) || IsKeyDown(KEY_W);
-        bool rotatingLeft = IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D);
-        bool rotatingRight = IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A);
+            if(IsKeyPressed(KEY_M)) {
+                playingMusic = !playingMusic;
+                if(playingMusic) {
+                    PlayMusicStream(backgroundMusic);
+                } else {
+                    PauseMusicStream(backgroundMusic);
+                }
+            }
+        }
+        else {
+            const float tapRadiusMultiplier = 2.5f; // Make touch detection area larger than visual buttons
+            
+            // Track whether each control has been activated by any touch
+            bool leftButtonPressed = false;
+            bool rightButtonPressed = false;
+            bool thrustButtonPressed = false;
+            bool centerAreaTapped = false;
+            
+            // Touch state tracking to preserve thrust between frames
+            static bool wasThrusting = false;
+            static double lastThrustTime = 0.0;
+            double currentTime = GetTime();
+            
+            // Check all possible touch points (most devices support up to 10)
+            int touchCount = GetTouchPointCount();
+            debugTouchCount = touchCount; // Update debug variable
+            
+            for (int i = 0; i < touchCount; i++) {
+                Vector2 touchPosition = GetTouchPosition(i);
+                float screenWidth = GetScreenWidth();
+                float screenHeight = GetScreenHeight();
+                
+                // Convert touch position to game coordinates
+                float gameY = (touchPosition.y - (screenHeight - (gameScreenHeight * screenScale)) * 0.5f) / screenScale;
+
+                // If game is paused, any tap will unpause
+                if (paused && IsGestureDetected(GESTURE_TAP)) {
+                    paused = false;
+                    break;
+                }
+
+                // Button dimensions
+                float buttonRadius = 40.0f;
+                Vector2 leftButtonPos = {buttonRadius * 1.5f, gameScreenHeight / 2.0f};
+                Vector2 rightButtonPos = {gameScreenWidth - buttonRadius * 1.5f, gameScreenHeight / 2.0f};
+                
+                // Convert from game coordinates to screen coordinates
+                Vector2 leftButtonScreenPos = {
+                    (screenWidth - (gameScreenWidth * screenScale)) * 0.5f + leftButtonPos.x * screenScale,
+                    (screenHeight - (gameScreenHeight * screenScale)) * 0.5f + leftButtonPos.y * screenScale
+                };
+                
+                Vector2 rightButtonScreenPos = {
+                    (screenWidth - (gameScreenWidth * screenScale)) * 0.5f + rightButtonPos.x * screenScale,
+                    (screenHeight - (gameScreenHeight * screenScale)) * 0.5f + rightButtonPos.y * screenScale
+                };
+                
+                // Check if touch is within left button (with expanded touch area)
+                if (CheckCollisionPointCircle(touchPosition, leftButtonScreenPos, buttonRadius * screenScale * tapRadiusMultiplier)) {
+                    leftButtonPressed = true;
+                }
+                // Check if touch is within right button (with expanded touch area)
+                else if (CheckCollisionPointCircle(touchPosition, rightButtonScreenPos, buttonRadius * screenScale * tapRadiusMultiplier)) {
+                    rightButtonPressed = true;
+                }
+                // Check if center area is tapped (for thrust or continuing)
+                else if (gameY > 40) {
+                    // If the game is running normally and not in a special state, apply thrust
+                    if (!firstTimeGameStart && !paused && !lostWindowFocus && !isInExitMenu && 
+                        !gameOver && !lander->IsLanded() && !lander->IsCrashed()) {
+                        thrustButtonPressed = true;
+                        lastThrustTime = currentTime; // Update the last thrust time
+                        debugLastThrustTime = lastThrustTime; // Update debug variable
+                    }
+                    
+                    // Track center taps for handling special states
+                    if (IsGestureDetected(GESTURE_TAP)) {
+                        centerAreaTapped = true;
+                    }
+                }
+                // Toggle pause if touch is in title bar area and it's a tap (not hold)
+                else if (gameY <= 40 && IsGestureDetected(GESTURE_TAP)) {
+                    // Only toggle pause if we're in normal gameplay
+                    if (!firstTimeGameStart && !lostWindowFocus && !isInExitMenu && 
+                        !gameOver && !lander->IsLanded() && !lander->IsCrashed()) {
+                        paused = !paused;
+                    }
+                    // Break after toggling pause to avoid processing other touches during this frame
+                    break;
+                }
+            }
+            
+            // Apply touch preservation for smoother thrust
+            if (!thrustButtonPressed && wasThrusting && (currentTime - lastThrustTime < thrustTimeout)) {
+                // Preserve thrust for a short time to handle brief gaps in touch detection
+                thrustButtonPressed = true;
+            }
+            
+            wasThrusting = thrustButtonPressed;
+            
+            // Update debug variables
+            debugThrustActive = thrustButtonPressed;
+            debugWasThrusting = wasThrusting;
+            
+            // Apply the control inputs for ship movement
+            rotatingRight = leftButtonPressed;   // Rotate left in game is right button (directional confusion in code)
+            rotatingLeft = rightButtonPressed;   // Rotate right in game is left button (directional confusion in code)
+            thrusting = thrustButtonPressed;
+            
+            // Handle special states with center area taps
+            if (centerAreaTapped) {
+                // Start game from title screen
+                if (firstTimeGameStart) {
+                    firstTimeGameStart = false;
+                }
+                // Restart after game over or winning the game
+                else if (gameOver || gameWon) {
+                    Reset();
+                }
+                // Progress to next level after landing
+                else if (lander->IsLanded() && GetTime() - lander->GetLandingTime() > inputDelay) {
+                    // Check if player completed level 15
+                    if (level >= 15) {
+                        gameWon = true;
+                    } else {
+                        Game::gravity += gravityIncrease;
+                        if (Game::gravity > MAX_GRAVITY) {
+                            Game::gravity = MAX_GRAVITY;
+                            Game::maxGravityReached = true;
+                        }
+                        if (Game::maxGravityReached) {
+                            Lander::fuelConsumption += fuelConsumptionIncrease;
+                            if (Lander::fuelConsumption > MAX_FUEL_CONSUMPTION) {
+                                Lander::fuelConsumption = MAX_FUEL_CONSUMPTION;
+                            }
+                        }
+                        level++;
+                        lander->Reset(width, height);
+                        Randomize();
+                        lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
+                    }
+                }
+                // Try again after crashing
+                else if (lander->IsCrashed() && !gameOver) {
+                    if (lives <= 1) {  
+                        gameOver = true;
+                    } else {
+                        lives--;
+                        lander->Reset(width, height);
+                        Randomize(); 
+                        lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
+                        explosionCompleted = false; 
+                    }
+                }
+            }
+        }
 
         lander->Update(dt, thrusting, rotatingLeft, rotatingRight);
 
-        if(IsKeyPressed(KEY_M)) {
-          playingMusic = !playingMusic;
-          if(playingMusic) {
-            PlayMusicStream(backgroundMusic);
-          } else {
-            PauseMusicStream(backgroundMusic);
-          }
-        }
-    } 
-    else 
-    {
-        if(IsGestureDetected(GESTURE_DRAG) || IsGestureDetected(GESTURE_HOLD)) {
-            
-            Vector2 touchPosition = GetTouchPosition(0);
-
-            float gameX = (touchPosition.x - (GetScreenWidth() - (gameScreenWidth * screenScale)) * 0.5f) / screenScale;
-            float gameY = (touchPosition.y - (GetScreenHeight() - (gameScreenHeight * screenScale)) * 0.5f) / screenScale;
-
-            Vector2 landerCenter = { lander->GetX() + lander->GetWidth()/2.0f, lander->GetY() + lander->GetHeight()/2.0f };
-            Vector2 direction = { gameX - landerCenter.x, gameY - landerCenter.y };
-
-            float length = sqrtf(direction.x * direction.x + direction.y * direction.y);
-            if(length > 0) {
-                direction.x /= length;
-                direction.y /= length;
-
-                float targetAngle = atan2f(direction.x, -direction.y) * RAD2DEG;
-                float currentAngle = lander->GetAngle();
-                float angleDiff = fmodf(targetAngle - currentAngle + 180.0f, 360.0f) - 180.0f;
+        if (lander->IsLanded() || lander->IsCrashed()) {
+            if (lander->IsCrashed()) {  
+                if (!explosionActive && !explosionCompleted) {
+                    StartExplosion(lander->GetCrashPosX(), lander->GetCrashPosY());
+                    explosionCompleted = true; 
+                }
                 
-                bool rotatingLeft = angleDiff > 5.0f;
+                if (lives <= 1) {  
+                    gameOver = true;
+                } else if (IsKeyPressed(KEY_ENTER) || (isMobile && IsGestureDetected(GESTURE_TAP))) {
+                    lives--;
+                    lander->Reset(width, height);
+                    Randomize(); 
+                    lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
+                    explosionCompleted = false; 
+                }
+            } else if (GetTime() - lander->GetLandingTime() > inputDelay && 
+                       (IsKeyPressed(KEY_ENTER) || (isMobile && IsGestureDetected(GESTURE_TAP)))) {
                 
-                bool rotatingRight = angleDiff < -5.0f;
-                bool thrusting = length > 50.0f; 
+                // Check if player completed level 15
+                if (level >= 15) {
+                    gameWon = true;
+                    return;
+                }
                 
-                lander->Update(dt, thrusting, rotatingLeft, rotatingRight);
-            }
-        }
-    }
-
-    if (lander->IsLanded() || lander->IsCrashed()) {
-        if (lander->IsCrashed()) {
-            
-            if (!explosionActive && !explosionCompleted) {
-                StartExplosion(lander->GetCrashPosX(), lander->GetCrashPosY());
-                explosionCompleted = true; 
-            }
-            
-            if (lives <= 1) {  
-                gameOver = true;
-            } else if (IsKeyPressed(KEY_ENTER)) {
-                lives--;
+                Game::gravity += gravityIncrease;
+                if(Game::gravity > MAX_GRAVITY) {
+                    Game::gravity = MAX_GRAVITY;
+                    Game::maxGravityReached = true;
+                }
+                if(Game::maxGravityReached) {
+                    Lander::fuelConsumption += fuelConsumptionIncrease;
+                    if(Lander::fuelConsumption > MAX_FUEL_CONSUMPTION) {
+                        Lander::fuelConsumption = MAX_FUEL_CONSUMPTION;
+                    }
+                }
+                level++;
                 lander->Reset(width, height);
                 Randomize(); 
                 lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
-                explosionCompleted = false; 
             }
-        } else if (GetTime() - lander->GetLandingTime() > inputDelay && IsKeyPressed(KEY_ENTER)) {
-            Game::gravity += gravityIncrease;
-            if(Game::gravity > MAX_GRAVITY) {
-                Game::gravity = MAX_GRAVITY;
-                Game::maxGravityReached = true;
-            }
-            if(Game::maxGravityReached) {
-              Lander::fuelConsumption += fuelConsumptionIncrease;
-              if(Lander::fuelConsumption > MAX_FUEL_CONSUMPTION) {
-                Lander::fuelConsumption = MAX_FUEL_CONSUMPTION;
-              }
-            }
-            level++;
-            lander->Reset(width, height);
-            Randomize(); 
-            lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
         }
     }
 }
@@ -348,13 +477,18 @@ void Game::UpdateUI()
 #ifndef EMSCRIPTEN_BUILD
     if (exitWindowRequested == false && lostWindowFocus == false && gameOver == false && IsKeyPressed(KEY_P))
 #else
-    if (exitWindowRequested == false && lostWindowFocus == false && gameOver == false && (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE)))
+    if (exitWindowRequested == false && lostWindowFocus == false && gameOver == false && 
+        (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE) || (isMobile && paused && IsGestureDetected(GESTURE_TAP))))
 #endif
     {
         paused = !paused;
     }
 
-    if (gameOver && IsKeyPressed(KEY_ENTER)) {
+    if (gameOver && (IsKeyPressed(KEY_ENTER) || (isMobile && IsGestureDetected(GESTURE_TAP)))) {
+        Reset();
+    }
+    
+    if (gameWon && (IsKeyPressed(KEY_ENTER) || (isMobile && IsGestureDetected(GESTURE_TAP)))) {
         Reset();
     }
 }
@@ -391,6 +525,41 @@ void Game::Draw()
     lander->Draw();
     DrawExplosion();
     DrawUI();
+    
+    // Draw mobile controls - always show them on mobile
+    if (isMobile) {
+        // Button dimensions
+        float buttonRadius = 40.0f;
+        Vector2 leftButtonPos = {buttonRadius * 1.5f, gameScreenHeight / 2.0f};
+        Vector2 rightButtonPos = {gameScreenWidth - buttonRadius * 1.5f, gameScreenHeight / 2.0f};
+        
+        // Draw rotation buttons
+        DrawCircle(leftButtonPos.x, leftButtonPos.y, buttonRadius, Fade(DARKGRAY, 0.6f));
+        DrawCircle(rightButtonPos.x, rightButtonPos.y, buttonRadius, Fade(DARKGRAY, 0.6f));
+        
+        // Draw arrows inside buttons
+        // Left button arrow - pointing LEFT (counter-clockwise order)
+        Vector2 leftArrowPoints[3] = {
+            {leftButtonPos.x - buttonRadius * 0.3f, leftButtonPos.y}, // Tip (left)
+            {leftButtonPos.x + buttonRadius * 0.3f, leftButtonPos.y + buttonRadius * 0.5f},  // Bottom-right
+            {leftButtonPos.x + buttonRadius * 0.3f, leftButtonPos.y - buttonRadius * 0.5f} // Top-right
+        };
+        DrawTriangle(leftArrowPoints[0], leftArrowPoints[1], leftArrowPoints[2], WHITE);
+        
+        // Right button arrow - pointing RIGHT (counter-clockwise order)
+        Vector2 rightArrowPoints[3] = {
+            {rightButtonPos.x - buttonRadius * 0.3f, rightButtonPos.y - buttonRadius * 0.5f},  // Top-left
+            {rightButtonPos.x - buttonRadius * 0.3f, rightButtonPos.y + buttonRadius * 0.5f}, // Bottom-left
+            {rightButtonPos.x + buttonRadius * 0.3f, rightButtonPos.y} // Tip (right)
+        };
+        DrawTriangle(rightArrowPoints[0], rightArrowPoints[1], rightArrowPoints[2], WHITE);
+        
+        // Add a help text for thrust
+        const char* thrustHelp = "Tap center area for thrust";
+        Vector2 thrustHelpSize = MeasureTextEx(font, thrustHelp, 20, 1);
+        DrawTextEx(font, thrustHelp, { (float)(gameScreenWidth / 2 - thrustHelpSize.x / 2), (float)(gameScreenHeight - 30) }, 20, 1, WHITE);
+    }
+    
     EndTextureMode();
 
     BeginDrawing();
@@ -415,7 +584,6 @@ void Game::DrawTerrain()
         if (segmentWidth < 1.0f) continue; 
         
         const int subdivisions = 20;
-        float subWidth = segmentWidth / subdivisions;
         
         for (int j = 0; j < subdivisions; j++) {
             float t1 = (float)j / subdivisions;
@@ -507,17 +675,35 @@ void Game::DrawUI()
             DrawTextEx(font, "Game over, press Enter to play again", {screenX + (gameScreenWidth / 2 - 200), screenY + gameScreenHeight / 2}, 20, 2, yellow);
         }
     }
+    else if (gameWon)
+    {
+        DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
+        DrawTextEx(font, "Congratulations! You completed all levels!", {screenX + (gameScreenWidth / 2 - 230), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
+        if (isMobile) {
+            DrawTextEx(font, "Tap to play again", {screenX + (gameScreenWidth / 2 - 90), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        } else {
+            DrawTextEx(font, "Press Enter to play again", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        }
+    }
     else if (lander->IsLanded())
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
         DrawTextEx(font, "Landing Successful!", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
-        DrawTextEx(font, "Press Enter for next level", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        if (isMobile) {
+            DrawTextEx(font, "Tap for next level", {screenX + (gameScreenWidth / 2 - 90), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        } else {
+            DrawTextEx(font, "Press Enter for next level", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        }
     }
     else if (lander->IsCrashed() && lives > 0)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
         DrawTextEx(font, "Crashed! You lost a life!", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15}, 20, 2, RED);
-        DrawTextEx(font, "Press Enter to try again", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        if (isMobile) {
+            DrawTextEx(font, "Tap to try again", {screenX + (gameScreenWidth / 2 - 90), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        } else {
+            DrawTextEx(font, "Press Enter to try again", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+        }
     }
 
     int rightMargin = 20;
@@ -552,9 +738,36 @@ void Game::DrawUI()
     Vector2 gravitySize = MeasureTextEx(font, gravityText, 20, 2);
     DrawTextEx(font, gravityText, { (float)(gameScreenWidth - gravitySize.x - rightMargin), (float)(startY + lineHeight * 6) }, 20, 2, WHITE);
 
-    const char* musicText = TextFormat("Press M to toggle music %s", playingMusic ? "(ON)" : "(OFF)");
-    Vector2 musicTextSize = MeasureTextEx(font, musicText, 24, 1);
-    DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 30) }, 24, 1, WHITE);
+    // Debug information for mobile thrust
+    if (isMobile) {
+        // These values are updated in the Update method
+        double currentTime = GetTime();
+        double timeSinceLastThrust = currentTime - debugLastThrustTime;
+        
+        int leftMargin = 20;
+        DrawTextEx(font, TextFormat("Thrust Active: %s", debugThrustActive ? "YES" : "NO"), 
+                  { (float)leftMargin, (float)startY }, 20, 2, debugThrustActive ? GREEN : RED);
+        
+        DrawTextEx(font, TextFormat("Was Thrusting: %s", debugWasThrusting ? "YES" : "NO"), 
+                  { (float)leftMargin, (float)(startY + lineHeight) }, 20, 2, debugWasThrusting ? GREEN : RED);
+        
+        DrawTextEx(font, TextFormat("Time Since Thrust: %.3f", timeSinceLastThrust), 
+                  { (float)leftMargin, (float)(startY + lineHeight * 2) }, 20, 2, WHITE);
+        
+        DrawTextEx(font, TextFormat("Touch Count: %d", debugTouchCount), 
+                  { (float)leftMargin, (float)(startY + lineHeight * 3) }, 20, 2, WHITE);
+        
+        // Show whether we're in the timeout window
+        bool inTimeoutWindow = timeSinceLastThrust < thrustTimeout;
+        DrawTextEx(font, TextFormat("In Timeout: %s (%.3fs)", inTimeoutWindow ? "YES" : "NO", thrustTimeout), 
+                  { (float)leftMargin, (float)(startY + lineHeight * 4) }, 20, 2, inTimeoutWindow ? GREEN : WHITE);
+    }
+
+    if (!isMobile) {
+        const char* musicText = TextFormat("Press M to toggle music %s", playingMusic ? "(ON)" : "(OFF)");
+        Vector2 musicTextSize = MeasureTextEx(font, musicText, 24, 1);
+        DrawTextEx(font, musicText, { (float)(gameScreenWidth / 2 - musicTextSize.x / 2), (float)(gameScreenHeight - 30) }, 24, 1, WHITE);
+    }
 }
 
 void Game::Randomize()

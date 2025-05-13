@@ -7,21 +7,24 @@
 #include "game.h"
 #include "globals.h"
 
-float Lander::thrust = 0.02f;
+float Lander::thrust = 2.5f;
 float Lander::rotationSpeed = 1.0f;
-float Lander::fuelConsumption = 0.05f;
+float Lander::fuelConsumption = Lander::initialFuelConsumption;
 
 Lander::Lander(int screenWidth, int screenHeight) {
-    thrustSound = LoadSound("data/thrust.mp3");
-    if (thrustSound.stream.buffer == NULL) {
+    thrustMusic = LoadMusicStream("data/thrust.mp3");
+    if (thrustMusic.stream.buffer == NULL) {
         #ifdef DEBUG
-        TraceLog(LOG_ERROR, "Failed to load thrust sound: data/thrust.mp3");
+        TraceLog(LOG_ERROR, "Failed to load thrust music: data/thrust.mp3");
         #endif
     } else {
         #ifdef DEBUG
-        TraceLog(LOG_INFO, "Successfully loaded thrust sound");
+        TraceLog(LOG_INFO, "Successfully loaded thrust music");
         #endif
-        SetSoundVolume(thrustSound, 1.0f);  
+        SetMusicVolume(thrustMusic, 1.0f);
+        //SetMusicPitch(thrustMusic, 1.0f);
+        // Enable looping of the thrust sound
+        thrustMusic.looping = true;
     }
 
     landSound = LoadSound("data/land.mp3");
@@ -100,9 +103,10 @@ void Lander::Reset(int screenWidth, int screenHeight) {
     std::uniform_real_distribution<float> dis(100.0f, screenWidth - 100.0f);
     landingPadX = dis(gen);
     landingTime = 0.0;
-    StopSound(thrustSound);
+    StopMusicStream(thrustMusic);
     wasThrusting = false;
     wasRotating = false;
+    Lander::fuelConsumption = Lander::initialFuelConsumption;
 }
 
 void Lander::SetTerrainReference(Vector2* terrain, int terrainPoints) {
@@ -119,9 +123,9 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
         bool shouldPlayThrustSound = (thrusting || isRotating) && fuel > 0;
 
         if (thrusting && fuel > 0) {
-            velocityX += sinf(angle * DEG2RAD) * thrust;
-            velocityY -= cosf(angle * DEG2RAD) * thrust;
-            fuel = fmaxf(0.0f, fuel - fuelConsumption);
+            velocityX += sinf(angle * DEG2RAD) * thrust * dt;
+            velocityY -= cosf(angle * DEG2RAD) * thrust * dt;
+            fuel = fmaxf(0.0f, fuel - fuelConsumption * dt);
         }
 
         if (isRotating) {
@@ -132,24 +136,26 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                 angle = fmodf(angle - rotationSpeed, 360.0f);
             }
             
-            fuel = fmaxf(0.0f, fuel - (fuelConsumption * 0.5f));
+            fuel = fmaxf(0.0f, fuel - (fuelConsumption * 0.5f * dt));
         }
 
-        if (shouldPlayThrustSound && thrustSound.stream.buffer != NULL) {
+        if (shouldPlayThrustSound && thrustMusic.stream.buffer != NULL) {
             if (!wasThrusting && !wasRotating) {
-                PlaySound(thrustSound);
+                PlayMusicStream(thrustMusic);
                 #ifdef DEBUG
-                TraceLog(LOG_INFO, "Started playing thrust sound");
+                TraceLog(LOG_INFO, "Started playing thrust music");
                 #endif
             }
-            wasThrusting = thrusting;
-            wasRotating = isRotating;
-        } else if ((wasThrusting || wasRotating) && thrustSound.stream.buffer != NULL) {
-            StopSound(thrustSound);
+            // Update the music stream to ensure continuous playback
+            UpdateMusicStream(thrustMusic);
+            wasThrusting = true;
+            wasRotating = true;
+        } else if ((wasThrusting || wasRotating) && thrustMusic.stream.buffer != NULL) {
+            StopMusicStream(thrustMusic);
             wasThrusting = false;
             wasRotating = false;
             #ifdef DEBUG
-            TraceLog(LOG_INFO, "Stopped thrust sound");
+            TraceLog(LOG_INFO, "Stopped thrust music");
             #endif
         }
 
@@ -238,7 +244,7 @@ void Lander::Draw() {
         DrawTexturePro(texture, source, dest, origin, angle, WHITE);
     }
 
-    if (!crashed && ((IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) || (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A))) && fuel > 0) {
+    if (!crashed && wasThrusting && fuel > 0) {
         if (flameTexture.id != 0) {
             float flameHeight = height * 0.4f;  
             float aspectRatio = (float)flameTexture.width / flameTexture.height;
@@ -257,7 +263,7 @@ void Lander::Draw() {
 }
 
 void Lander::Cleanup() {
-    UnloadSound(thrustSound);
+    UnloadMusicStream(thrustMusic);
     UnloadSound(landSound);
     UnloadSound(crashSound);
     if (texture.id != 0) {

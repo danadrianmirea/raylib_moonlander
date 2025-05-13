@@ -13,7 +13,6 @@ public:
     void InitGame();
     void Reset();
     void Update(float dt);
-    void HandleInput();
     void UpdateUI();
     void Draw();
     void DrawTerrain();
@@ -23,11 +22,11 @@ public:
     std::string FormatWithLeadingZeroes(int number, int width);
     void Randomize();
 
+    static constexpr float gravityIncrease = 0.15f;
+    static constexpr float fuelConsumptionIncrease = 1.0f;
     static bool isMobile;
     static float gravity;
     static bool maxGravityReached;
-    static constexpr float gravityIncrease = 0.15f;
-    static constexpr float fuelConsumptionIncrease = 0.01f;
     static float velocityLimit;
 
 private:
@@ -36,6 +35,7 @@ private:
     bool paused;
     bool lostWindowFocus;
     bool gameOver;
+    bool gameWon;
     bool playingMusic;
 
     float screenScale;

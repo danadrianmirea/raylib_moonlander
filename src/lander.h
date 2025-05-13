@@ -26,10 +26,12 @@ public:
     float GetCrashPosX() const { return crashPosX; }
     float GetCrashPosY() const { return crashPosY; }
 
+    
     static float thrust;
     static float rotationSpeed;
     static float fuelConsumption;
     static constexpr float collisionScale = 0.8f;
+    static constexpr float initialFuelConsumption = 10.0f;
 
 private:
     float landerX, landerY;
@@ -43,7 +45,7 @@ private:
     float landingPadX;
     double landingTime;
     float crashPosX, crashPosY;
-    Sound thrustSound;
+    Music thrustMusic;
     Sound landSound;
     Sound crashSound;
     bool wasThrusting;
