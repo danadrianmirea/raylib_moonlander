@@ -106,7 +106,6 @@ void Lander::Reset(int screenWidth, int screenHeight) {
     StopMusicStream(thrustMusic);
     wasThrusting = false;
     wasRotating = false;
-    Lander::fuelConsumption = Lander::initialFuelConsumption;
 }
 
 void Lander::SetTerrainReference(Vector2* terrain, int terrainPoints) {

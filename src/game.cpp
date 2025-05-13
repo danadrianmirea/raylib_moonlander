@@ -166,6 +166,7 @@ void Game::Reset()
     Game::velocityLimit = INITIAL_VELOCITY_LIMIT;
     explosionCompleted = false;
     gameWon = false;
+    Lander::fuelConsumption = Lander::initialFuelConsumption;
     lander->Reset(width, height);
     Randomize(); 
     lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
@@ -331,30 +332,6 @@ void Game::Update(float dt)
                 else if (gameOver || gameWon) {
                     Reset();
                 }
-                // Progress to next level after landing
-                else if (lander->IsLanded() && GetTime() - lander->GetLandingTime() > inputDelay) {
-                    // Check if player completed the final level (10 for mobile, 15 for desktop)
-                    int winLevel = isMobile ? 10 : 15;
-                    if (level >= winLevel) {
-                        gameWon = true;
-                    } else {
-                        Game::gravity += gravityIncrease;
-                        if (Game::gravity > MAX_GRAVITY) {
-                            Game::gravity = MAX_GRAVITY;
-                            Game::maxGravityReached = true;
-                        }
-                        if (Game::maxGravityReached) {
-                            Lander::fuelConsumption += fuelConsumptionIncrease;
-                            if (Lander::fuelConsumption > MAX_FUEL_CONSUMPTION) {
-                                Lander::fuelConsumption = MAX_FUEL_CONSUMPTION;
-                            }
-                        }
-                        level++;
-                        lander->Reset(width, height);
-                        Randomize();
-                        lander->SetTerrainReference(terrainPoints, TERRAIN_POINTS);
-                    }
-                }
                 // Try again after crashing
                 else if (lander->IsCrashed() && !gameOver) {
                     if (lives <= 1) {  
@@ -404,7 +381,7 @@ void Game::Update(float dt)
                     Game::maxGravityReached = true;
                 }
                 if(Game::maxGravityReached) {
-                    Lander::fuelConsumption += fuelConsumptionIncrease;
+                    Lander::fuelConsumption += Game::fuelConsumptionIncrease;
                     if(Lander::fuelConsumption > MAX_FUEL_CONSUMPTION) {
                         Lander::fuelConsumption = MAX_FUEL_CONSUMPTION;
                     }
@@ -681,15 +658,45 @@ void Game::DrawUI()
     }
     else if (firstTimeGameStart)
     {
-        DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 80}, 0.76f, 20, BLACK);
+        DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 350), screenY + (float)(gameScreenHeight / 2 - 150), 650, 380}, 0.76f, 20, BLACK);
+        DrawTextEx(font, "Welcome to Moonlander", {screenX + (gameScreenWidth / 2 - 160), screenY + gameScreenHeight / 2 - 130}, 24, 2, GREEN);
+        
+        const char* objective1 = "The objective is to land on the landing pad while";
+        const char* objective2 = "carefully managing landing speed and angle.";
+        const char* objective3 = "Try to get to level 15 to beat the game.";
+        const char* objective4 = "Each level you will face tougher gravity";
+        const char* objective5 = "and fuel restrictions.";
+        
+        DrawTextEx(font, objective1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 90}, 18, 2, WHITE);
+        DrawTextEx(font, objective2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 60}, 18, 2, WHITE);
+        DrawTextEx(font, objective3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 30}, 18, 2, WHITE);
+        DrawTextEx(font, objective4, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2}, 18, 2, WHITE);
+        DrawTextEx(font, objective5, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 30}, 18, 2, WHITE);
+        
         if (isMobile) {
-            DrawTextEx(font, "Tap to play", {screenX + (gameScreenWidth / 2 - 60), screenY + gameScreenHeight / 2 + 10}, 20, 2, yellow);
+            const char* controls1 = "Controls: Tap center area for thrust, tap title to pause";
+            const char* controls2 = "Tap left/right buttons to rotate";
+            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 70}, 18, 2, yellow);
+            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 100}, 18, 2, yellow);
+            DrawTextEx(font, "Tap to play", {screenX + (gameScreenWidth / 2 - 60), screenY + gameScreenHeight / 2 + 140}, 20, 2, GREEN);
         } else {
 #ifndef EMSCRIPTEN_BUILD            
-            DrawTextEx(font, "Press Enter to play", {screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 - 10}, 20, 2, yellow);
-            DrawTextEx(font, "Alt+Enter: toggle fullscreen", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 30}, 20, 2, yellow);
+            const char* controls1 = "Controls: Arrow Up/W for thrust";
+            const char* controls2 = "Arrow Left/A and Right/D to rotate";
+            const char* controls3 = "M to toggle music, P to pause, ESC to exit";
+            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 70}, 18, 2, yellow);
+            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 100}, 18, 2, yellow);
+            DrawTextEx(font, controls3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 130}, 18, 2, yellow);
+            DrawTextEx(font, "Press Enter to play", {screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 + 170}, 20, 2, GREEN);
+            DrawTextEx(font, "Alt+Enter: toggle fullscreen", {screenX + (gameScreenWidth / 2 - 170), screenY + gameScreenHeight / 2 + 200}, 18, 2, WHITE);
 #else
-            DrawTextEx(font, "Press Enter to play", {screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 + 10}, 20, 2, yellow);
+            const char* controls1 = "Controls: Arrow Up/W for thrust";
+            const char* controls2 = "Arrow Left/A and Right/D to rotate";
+            const char* controls3 = "M to toggle music, P or ESC to pause";
+            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 70}, 18, 2, yellow);
+            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 100}, 18, 2, yellow);
+            DrawTextEx(font, controls3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 130}, 18, 2, yellow);
+            DrawTextEx(font, "Press Enter to play", {screenX + (gameScreenWidth / 2 - 100), screenY + gameScreenHeight / 2 + 170}, 20, 2, GREEN);
 #endif
         }
     }

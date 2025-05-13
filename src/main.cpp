@@ -17,9 +17,7 @@ void mainLoop()
 
 int main()
 {
-    
-    InitAudioDevice();
-    
+    InitAudioDevice();   
     InitWindow(gameScreenWidth, gameScreenHeight, "Moonlander");
 #ifndef EMSCRIPTEN_BUILD
     SetWindowState(FLAG_WINDOW_RESIZABLE);
