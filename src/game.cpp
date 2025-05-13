@@ -737,21 +737,34 @@ void Game::DrawUI()
     else if (lander->IsLanded())
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawTextEx(font, "Landing Successful!", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
+        const char* landingText = "Landing Successful!";
+        Vector2 landingTextSize = MeasureTextEx(font, landingText, 20, 2);
+        DrawTextEx(font, landingText, {screenX + (gameScreenWidth / 2 - landingTextSize.x/2), screenY + gameScreenHeight / 2 - 15}, 20, 2, GREEN);
         if (isMobile) {
-            DrawTextEx(font, "Tap for next level", {screenX + (gameScreenWidth / 2 - 90), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+            const char* nextLevelText = "Tap for next level";
+            Vector2 nextLevelSize = MeasureTextEx(font, nextLevelText, 20, 2);
+            DrawTextEx(font, nextLevelText, {screenX + (gameScreenWidth / 2 - nextLevelSize.x/2), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
         } else {
-            DrawTextEx(font, "Press Enter for next level", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+            const char* nextLevelText = "Press Enter for next level";
+            Vector2 nextLevelSize = MeasureTextEx(font, nextLevelText, 20, 2);
+            DrawTextEx(font, nextLevelText, {screenX + (gameScreenWidth / 2 - nextLevelSize.x/2), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
         }
     }
     else if (lander->IsCrashed() && lives > 0)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 250), screenY + (float)(gameScreenHeight / 2 - 20), 500, 60}, 0.76f, 20, BLACK);
-        DrawTextEx(font, "Crashed! You lost a life!", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 - 15}, 20, 2, RED);
+        std::string crashReason = GetCrashReason();
+        const char* crashText = TextFormat("Crashed! %s", crashReason.c_str());
+        Vector2 textSize = MeasureTextEx(font, crashText, 20, 2);
+        DrawTextEx(font, crashText, {screenX + (gameScreenWidth / 2 - textSize.x/2), screenY + gameScreenHeight / 2 - 15}, 20, 2, RED);
         if (isMobile) {
-            DrawTextEx(font, "Tap to try again", {screenX + (gameScreenWidth / 2 - 90), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+            const char* tryAgainText = "Tap to try again";
+            Vector2 tryAgainSize = MeasureTextEx(font, tryAgainText, 20, 2);
+            DrawTextEx(font, tryAgainText, {screenX + (gameScreenWidth / 2 - tryAgainSize.x/2), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
         } else {
-            DrawTextEx(font, "Press Enter to try again", {screenX + (gameScreenWidth / 2 - 120), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
+            const char* tryAgainText = "Press Enter to try again";
+            Vector2 tryAgainSize = MeasureTextEx(font, tryAgainText, 20, 2);
+            DrawTextEx(font, tryAgainText, {screenX + (gameScreenWidth / 2 - tryAgainSize.x/2), screenY + gameScreenHeight / 2 + 15}, 20, 2, WHITE);
         }
     }
 
@@ -941,4 +954,37 @@ void Game::StartExplosion(float x, float y)
 
     explosionPosition.x = x - scaledWidth/2.0f;
     explosionPosition.y = y - scaledHeight/2.0f;
+}
+
+std::string Game::GetCrashReason() const {
+    if (!lander->IsCrashed()) {
+        return "";
+    }
+    
+    float vx = fabs(lander->GetVelocityX());
+    float vy = fabs(lander->GetVelocityY());
+    float normalizedAngle = fmodf(lander->GetAngle() + 180.0f, 360.0f) - 180.0f;
+    bool badAngle = fabs(normalizedAngle) >= 15.0f;
+    bool highVelocityX = vx >= Game::velocityLimit;
+    bool highVelocityY = vy >= Game::velocityLimit;
+    
+    // Check if we're near the landing pad
+    float centerX = lander->GetX() + lander->GetWidth() * Lander::collisionScale / 2.0f;
+    bool nearPad = fabs(centerX - lander->GetLandingPadX()) <= 50.0f;
+    
+    if (!nearPad) {
+        return "Missed the landing pad!";
+    } else if (badAngle && (highVelocityX || highVelocityY)) {
+        return "Bad angle and too fast!";
+    } else if (badAngle) {
+        return "Bad landing angle!";
+    } else if (highVelocityX && highVelocityY) {
+        return "Too fast - both horizontal and vertical!";
+    } else if (highVelocityX) {
+        return "Too fast - horizontal velocity!";
+    } else if (highVelocityY) {
+        return "Too fast - vertical velocity!";
+    } else {
+        return "Something went wrong!";
+    }
 }

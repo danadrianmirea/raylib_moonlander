@@ -21,6 +21,7 @@ public:
     void StartExplosion(float x, float y);
     std::string FormatWithLeadingZeroes(int number, int width);
     void Randomize();
+    std::string GetCrashReason() const;
 
     static constexpr float gravityIncrease = 0.15f;
     static constexpr float fuelConsumptionIncrease = 1.0f;
