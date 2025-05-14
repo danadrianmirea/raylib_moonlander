@@ -279,7 +279,7 @@ void Game::Update(float dt)
                     rightButtonPressed = true;
                 }
                 // Check if center area is tapped (for thrust or continuing)
-                else if (gameY > 40) {
+                else if (gameY > 100) {
                     // If the game is running normally and not in a special state, apply thrust
                     if (!firstTimeGameStart && !paused && !lostWindowFocus && !isInExitMenu && 
                         !gameOver && !lander->IsLanded() && !lander->IsCrashed()) {
@@ -294,7 +294,7 @@ void Game::Update(float dt)
                     }
                 }
                 // Toggle pause if touch is in title bar area and it's a tap (not hold)
-                else if (gameY <= 40 && IsGestureDetected(GESTURE_TAP)) {
+                else if (gameY <= 100 && IsGestureDetected(GESTURE_TAP)) {
                     // Only toggle pause if we're in normal gameplay
                     if (!firstTimeGameStart && !lostWindowFocus && !isInExitMenu && 
                         !gameOver && !lander->IsLanded() && !lander->IsCrashed()) {
@@ -512,6 +512,15 @@ void Game::Draw()
         Vector2 leftButtonPos = {buttonRadius * 1.5f, gameScreenHeight / 2.0f};
         Vector2 rightButtonPos = {gameScreenWidth - buttonRadius * 1.5f, gameScreenHeight / 2.0f};
         
+        // Draw a subtle indicator for the pause area
+        if (!firstTimeGameStart && !paused && !lostWindowFocus && !isInExitMenu && 
+            !gameOver && !lander->IsLanded() && !lander->IsCrashed()) {
+            DrawRectangle(0, 0, gameScreenWidth, 100, ColorAlpha(DARKGRAY, 0.1f));
+            const char* pauseIndicator = "Tap here to pause";
+            Vector2 pauseSize = MeasureTextEx(font, pauseIndicator, 20, 1);
+            DrawTextEx(font, pauseIndicator, {(gameScreenWidth / 2) - (pauseSize.x / 2), 70}, 20, 1, ColorAlpha(WHITE, 0.5f));
+        }
+        
         // Draw rotation buttons
         DrawCircle(leftButtonPos.x, leftButtonPos.y, buttonRadius, Fade(DARKGRAY, 0.6f));
         DrawCircle(rightButtonPos.x, rightButtonPos.y, buttonRadius, Fade(DARKGRAY, 0.6f));
@@ -683,7 +692,7 @@ void Game::DrawUI()
         DrawTextEx(font, objective5, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 20}, 25, 2, WHITE);
 
         if (isMobile) {
-            const char* controls1 = "Controls: Tap center area for thrust, tap title to pause";
+            const char* controls1 = "Controls: Tap center area for thrust, tap top area to pause";
             const char* controls2 = "Tap left/right buttons to rotate";
             DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 20}, 25, 2, yellow);
             DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 50}, 25, 2, yellow);
