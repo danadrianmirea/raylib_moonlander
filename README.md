@@ -1,15 +1,26 @@
-# Raylib Game Template
+# Raylib Moonlander
 
-A modern, cross-platform game template built with raylib, supporting both desktop and web builds. This template serves as a foundation for creating games that can be deployed to multiple platforms, including itch.io.
+A classic lunar lander game built with raylib where you pilot a spacecraft to land safely on the moon's surface. The game features increasing difficulty levels, realistic physics, and is playable on both desktop and web platforms.
 
-## Features
+## Game Features
 
-- **Cross-Platform Support**: Build for desktop and web platforms
-- **Responsive Design**: Dynamic resizing support for desktop, web, and mobile web
-- **Render to Texture**: Advanced rendering approach for consistent visuals across platforms
-- **Automated Builds**: Automatic zip generation for easy itch.io deployment
-- **CMake Integration**: Modern build system for desktop platforms
-- **Emscripten Support**: Web builds via Emscripten
+- **Realistic Lunar Physics**: Gravity affects your lander as you try to navigate to the landing pad
+- **Progressive Difficulty**: Increasing gravity and fuel consumption as you advance through levels
+- **Dynamic Terrain**: Randomly generated lunar terrain for each level
+- **Visual Effects**: Explosion animations, thruster effects, and a space background
+- **Cross-Platform**: Works on desktop (Windows, macOS, Linux) and web browsers
+- **Mobile Support**: Touch controls for playing on mobile devices
+
+## Controls
+
+### Desktop
+- **Up Arrow**: Fire thrusters
+- **Left/Right Arrows**: Rotate lander
+- **P**: Pause game
+- **R**: Reset game
+
+### Mobile
+- **Touch Screen**: Tap for thrust and directional controls
 
 ## Building the Project
 
@@ -31,7 +42,7 @@ The executable will be created in the `build` directory.
 
 ### Web Build (Emscripten)
 
-To build for web platforms, simply run:
+To build for web platforms, run:
 ```bash
 ./build_web.sh
 ```
@@ -43,41 +54,29 @@ This will:
 
 ## Project Structure
 
-- `src/`: Source code directory
-- `lib/`: Library dependencies
+- `src/`: Source code for the game (lander.cpp, game.cpp, etc.)
+- `data/`: Game assets (textures, sounds, music)
 - `Font/`: Font assets
 - `build/`: Desktop build output
 - `web-build/`: Web build output
 - `CMakeLists.txt`: CMake build configuration
 - `build_web.sh`: Web build script
-- `custom_shell.html`: Custom HTML shell for web builds
 
-## Deployment
+## Gameplay Tips
 
-### itch.io Deployment
-
-The build system automatically generates zip files:
-- Desktop builds: Located in the `build` directory
-- Web builds: `web-build.zip` is created after running `build_web.sh`
-
-These zip files can be directly uploaded to itch.io for distribution.
+- Land slowly and keep your spacecraft level for a successful landing
+- Watch your fuel gauge - running out of fuel means certain crash
+- Each level increases in difficulty with stronger gravity
+- You have three lives - use them wisely!
 
 ## Technical Details
 
-### Render to Texture Approach
+### Rendering Approach
 
-The template uses a render-to-texture approach to ensure:
+The game uses a render-to-texture approach to ensure:
 - Consistent visuals across different screen sizes
 - Proper scaling on mobile devices
 - Smooth resizing on desktop platforms
-
-### Dynamic Resizing
-
-The game automatically handles:
-- Window resizing on desktop
-- Browser window resizing
-- Mobile device orientation changes
-- Different screen resolutions
 
 ## License
 
