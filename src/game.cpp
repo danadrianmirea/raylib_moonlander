@@ -660,59 +660,68 @@ void Game::DrawUI()
     }
     else if (firstTimeGameStart)
     {
-        DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 350), screenY + (float)(gameScreenHeight / 2 - 150), 650, 380}, 0.76f, 20, BLACK);
+        DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 350), screenY + (float)(gameScreenHeight / 2 - 200), 650, 430}, 0.76f, 20, BLACK);
         const char* welcomeText = "Welcome to Moonlander";
-        Vector2 welcomeSize = MeasureTextEx(font, welcomeText, 24, 2);
-        DrawTextEx(font, welcomeText, {screenX + (gameScreenWidth / 2 - welcomeSize.x/2), screenY + gameScreenHeight / 2 - 130}, 24, 2, GREEN);
+        Vector2 welcomeSize = MeasureTextEx(font, welcomeText, 30, 2);
+        DrawTextEx(font, welcomeText, {screenX + (gameScreenWidth / 2 - welcomeSize.x/2), screenY + gameScreenHeight / 2 - 180}, 30, 2, GREEN);
         
         const char* objective1 = "The objective is to land on the landing pad while";
         const char* objective2 = "carefully managing landing speed and angle.";
-        const char* objective3 = "Try to get to level 15 to beat the game.";
+        const char* objective3 = "";
+        if(!isMobile) {
+            objective3 = "Try to get to level 15 to beat the game.";
+        } else {
+            objective3 = "Try to get to level 10 to beat the game.";
+        }
         const char* objective4 = "Each level you will face tougher gravity";
         const char* objective5 = "and fuel restrictions.";
         
-        DrawTextEx(font, objective1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 90}, 18, 2, WHITE);
-        DrawTextEx(font, objective2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 60}, 18, 2, WHITE);
-        DrawTextEx(font, objective3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 30}, 18, 2, WHITE);
-        DrawTextEx(font, objective4, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2}, 18, 2, WHITE);
-        DrawTextEx(font, objective5, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 30}, 18, 2, WHITE);
-        
+        DrawTextEx(font, objective1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 140}, 25, 2, WHITE);
+        DrawTextEx(font, objective2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 110}, 25, 2, WHITE);
+        DrawTextEx(font, objective3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 80}, 25, 2, WHITE);
+        DrawTextEx(font, objective4, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 50}, 25, 2, WHITE);
+        DrawTextEx(font, objective5, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 20}, 25, 2, WHITE);
+
         if (isMobile) {
             const char* controls1 = "Controls: Tap center area for thrust, tap title to pause";
             const char* controls2 = "Tap left/right buttons to rotate";
-            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 70}, 18, 2, yellow);
-            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 100}, 18, 2, yellow);
+            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 20}, 25, 2, yellow);
+            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 50}, 25, 2, yellow);
             
             const char* tapText = "Tap to play";
-            Vector2 tapTextSize = MeasureTextEx(font, tapText, 20, 2);
-            DrawTextEx(font, tapText, {screenX + (gameScreenWidth / 2 - tapTextSize.x/2), screenY + gameScreenHeight / 2 + 140}, 20, 2, GREEN);
+            Vector2 tapTextSize = MeasureTextEx(font, tapText, 25, 2);
+            DrawTextEx(font, tapText, {screenX + (gameScreenWidth / 2 - tapTextSize.x/2), screenY + gameScreenHeight / 2 + 90}, 25, 2, GREEN);
+
+            const char* noteText = "For best experience, play the desktop version";
+            Vector2 noteTextSize = MeasureTextEx(font, noteText, 25, 2);
+            DrawTextEx(font, noteText, {screenX + (gameScreenWidth / 2 - noteTextSize.x/2), screenY + gameScreenHeight / 2 + 130}, 25, 2, WHITE);
         } else {
 #ifndef EMSCRIPTEN_BUILD            
             const char* controls1 = "Controls: Arrow Up/W for thrust";
             const char* controls2 = "Arrow Left/A and Right/D to rotate";
             const char* controls3 = "M to toggle music, P to pause, ESC to exit";
-            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 70}, 18, 2, yellow);
-            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 100}, 18, 2, yellow);
-            DrawTextEx(font, controls3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 130}, 18, 2, yellow);
+            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 20}, 25, 2, yellow);
+            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 50}, 25, 2, yellow);
+            DrawTextEx(font, controls3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 80}, 25, 2, yellow);
             
             const char* enterText = "Press Enter to play";
-            Vector2 enterTextSize = MeasureTextEx(font, enterText, 20, 2);
-            DrawTextEx(font, enterText, {screenX + (gameScreenWidth / 2 - enterTextSize.x/2), screenY + gameScreenHeight / 2 + 170}, 20, 2, GREEN);
+            Vector2 enterTextSize = MeasureTextEx(font, enterText, 25, 2);
+            DrawTextEx(font, enterText, {screenX + (gameScreenWidth / 2 - enterTextSize.x/2), screenY + gameScreenHeight / 2 + 130}, 25, 2, GREEN);
             
             const char* fullscreenText = "Alt+Enter: toggle fullscreen";
-            Vector2 fullscreenTextSize = MeasureTextEx(font, fullscreenText, 18, 2);
-            DrawTextEx(font, fullscreenText, {screenX + (gameScreenWidth / 2 - fullscreenTextSize.x/2), screenY + gameScreenHeight / 2 + 200}, 18, 2, WHITE);
+            Vector2 fullscreenTextSize = MeasureTextEx(font, fullscreenText, 25, 2);
+            DrawTextEx(font, fullscreenText, {screenX + (gameScreenWidth / 2 - fullscreenTextSize.x/2), screenY + gameScreenHeight / 2 + 170}, 25, 2, WHITE);
 #else
             const char* controls1 = "Controls: Arrow Up/W for thrust";
             const char* controls2 = "Arrow Left/A and Right/D to rotate";
             const char* controls3 = "M to toggle music, P or ESC to pause";
-            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 70}, 18, 2, yellow);
-            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 100}, 18, 2, yellow);
-            DrawTextEx(font, controls3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 130}, 18, 2, yellow);
+            DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 20}, 25, 2, yellow);
+            DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 50}, 25, 2, yellow);
+            DrawTextEx(font, controls3, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 80}, 25, 2, yellow);
             
             const char* enterText = "Press Enter to play";
-            Vector2 enterTextSize = MeasureTextEx(font, enterText, 20, 2);
-            DrawTextEx(font, enterText, {screenX + (gameScreenWidth / 2 - enterTextSize.x/2), screenY + gameScreenHeight / 2 + 170}, 20, 2, GREEN);
+            Vector2 enterTextSize = MeasureTextEx(font, enterText, 25, 2);
+            DrawTextEx(font, enterText, {screenX + (gameScreenWidth / 2 - enterTextSize.x/2), screenY + gameScreenHeight / 2 + 130}, 25, 2, GREEN);
 #endif
         }
     }
