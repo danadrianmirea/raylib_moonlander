@@ -103,6 +103,7 @@ void Lander::Reset(int screenWidth, int screenHeight) {
     std::uniform_real_distribution<float> dis(100.0f, screenWidth - 100.0f);
     landingPadX = dis(gen);
     landingTime = 0.0;
+    // When resetting, we do want to completely stop the sound
     StopMusicStream(thrustMusic);
     wasThrusting = false;
     wasRotating = false;
@@ -140,21 +141,26 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
 
         if (shouldPlayThrustSound && thrustMusic.stream.buffer != NULL) {
             if (!wasThrusting && !wasRotating) {
+                // If the sound wasn't playing before, start it
                 PlayMusicStream(thrustMusic);
                 #ifdef DEBUG
                 TraceLog(LOG_INFO, "Started playing thrust music");
                 #endif
+            } else {
+                // If it was paused, resume it
+                ResumeMusicStream(thrustMusic);
             }
             // Update the music stream to ensure continuous playback
             UpdateMusicStream(thrustMusic);
             wasThrusting = true;
             wasRotating = true;
         } else if ((wasThrusting || wasRotating) && thrustMusic.stream.buffer != NULL) {
-            StopMusicStream(thrustMusic);
+            // Pause instead of stop to allow for smoother transitions
+            PauseMusicStream(thrustMusic);
             wasThrusting = false;
             wasRotating = false;
             #ifdef DEBUG
-            TraceLog(LOG_INFO, "Stopped thrust music");
+            TraceLog(LOG_INFO, "Paused thrust music");
             #endif
         }
 
@@ -197,12 +203,24 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                         if (fabsf(normalizedAngle) < 15.0f) {
                             landed = true;
                             landingTime = GetTime();
+                            // Make sure thrust sound is completely stopped when landing
+                            if (thrustMusic.stream.buffer != NULL) {
+                                StopMusicStream(thrustMusic);
+                                wasThrusting = false;
+                                wasRotating = false;
+                            }
                             PlaySound(landSound);
                             #ifdef DEBUG
                             TraceLog(LOG_INFO, "Land sound played");
                             #endif
                         } else {
                             crashed = true;
+                            // Make sure thrust sound is completely stopped when crashing
+                            if (thrustMusic.stream.buffer != NULL) {
+                                StopMusicStream(thrustMusic);
+                                wasThrusting = false;
+                                wasRotating = false;
+                            }
                             PlaySound(crashSound);
                             #ifdef DEBUG
                             TraceLog(LOG_INFO, "Crash sound played - wrong angle");
@@ -213,6 +231,12 @@ void Lander::Update(float dt, bool thrusting, bool rotatingLeft, bool rotatingRi
                         }
                     } else {
                         crashed = true;
+                        // Make sure thrust sound is completely stopped when crashing
+                        if (thrustMusic.stream.buffer != NULL) {
+                            StopMusicStream(thrustMusic);
+                            wasThrusting = false;
+                            wasRotating = false;
+                        }
                         PlaySound(crashSound);
                         #ifdef DEBUG
                         TraceLog(LOG_INFO, "Crash sound played - hit terrain");
