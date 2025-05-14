@@ -184,6 +184,12 @@ void Game::Update(float dt)
     screenScale = MIN((float)GetScreenWidth() / gameScreenWidth, (float)GetScreenHeight() / gameScreenHeight);
     UpdateUI();
 
+    // If game is paused, any tap will unpause
+    if (isMobile && paused && IsGestureDetected(GESTURE_TAP)) {
+        paused = false;
+        return;
+    }    
+
     bool running = (firstTimeGameStart == false && paused == false && lostWindowFocus == false && isInExitMenu == false && gameOver == false);
 
     if (!firstTimeGameStart && !musicStarted && backgroundMusic.stream.buffer != NULL && playingMusic) {
@@ -247,13 +253,6 @@ void Game::Update(float dt)
                 
                 // Convert touch position to game coordinates
                 float gameY = (touchPosition.y - (screenHeight - (gameScreenHeight * screenScale)) * 0.5f) / screenScale;
-
-                // If game is paused, any tap will unpause
-                if (paused && IsGestureDetected(GESTURE_TAP)) {
-                    paused = false;
-                    break;
-                }
-
                 // Button dimensions
                 float buttonRadius = 40.0f;
                 Vector2 leftButtonPos = {buttonRadius * 1.5f, gameScreenHeight / 2.0f};
@@ -294,11 +293,11 @@ void Game::Update(float dt)
                     }
                 }
                 // Toggle pause if touch is in title bar area and it's a tap (not hold)
-                else if (gameY <= 100 && IsGestureDetected(GESTURE_TAP)) {
+                else if (gameY <= 100 && IsGestureDetected(GESTURE_TAP) && !paused) {
                     // Only toggle pause if we're in normal gameplay
                     if (!firstTimeGameStart && !lostWindowFocus && !isInExitMenu && 
                         !gameOver && !lander->IsLanded() && !lander->IsCrashed()) {
-                        paused = !paused;
+                        paused = true;
                     }
                     // Break after toggling pause to avoid processing other touches during this frame
                     break;
@@ -457,7 +456,7 @@ void Game::UpdateUI()
     if (exitWindowRequested == false && lostWindowFocus == false && gameOver == false && IsKeyPressed(KEY_P))
 #else
     if (exitWindowRequested == false && lostWindowFocus == false && gameOver == false && 
-        (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE) || (isMobile && paused && IsGestureDetected(GESTURE_TAP))))
+        (IsKeyPressed(KEY_P) || IsKeyPressed(KEY_ESCAPE)))
 #endif
     {
         paused = !paused;
