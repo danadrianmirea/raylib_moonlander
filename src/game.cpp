@@ -542,7 +542,7 @@ void Game::Draw()
         DrawTriangle(rightArrowPoints[0], rightArrowPoints[1], rightArrowPoints[2], WHITE);
         
         // Add a help text for thrust
-        const char* thrustHelp = "Tap center area for thrust";
+        const char* thrustHelp = "Tap screen for thrust";
         Vector2 thrustHelpSize = MeasureTextEx(font, thrustHelp, 25, 1);
         DrawTextEx(font, thrustHelp, { (float)(gameScreenWidth / 2 - thrustHelpSize.x / 2), (float)(gameScreenHeight - 30) }, 25, 1, WHITE);
     }
@@ -691,7 +691,7 @@ void Game::DrawUI()
         DrawTextEx(font, objective5, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 - 20}, 25, 2, WHITE);
 
         if (isMobile) {
-            const char* controls1 = "Controls: Tap center area for thrust, tap top area to pause";
+            const char* controls1 = "Controls: Tap screen for thrust, tap top area to pause";
             const char* controls2 = "Tap left/right buttons to rotate";
             DrawTextEx(font, controls1, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 20}, 25, 2, yellow);
             DrawTextEx(font, controls2, {screenX + (gameScreenWidth / 2 - 275), screenY + gameScreenHeight / 2 + 50}, 25, 2, yellow);
