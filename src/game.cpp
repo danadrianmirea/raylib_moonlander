@@ -614,7 +614,7 @@ void Game::DrawUI()
     float screenX = 0.0f;
     float screenY = 0.0f;
 
-    DrawTextEx(font, "Moonlander", {400, 10}, 34, 2, WHITE);
+    DrawTextEx(font, "Houston Control", {400, 10}, 34, 2, WHITE);
 
     // Show fuel warnings when appropriate (only during active gameplay)
     if (!firstTimeGameStart && !paused && !lostWindowFocus && !isInExitMenu && 
@@ -669,7 +669,7 @@ void Game::DrawUI()
     else if (firstTimeGameStart)
     {
         DrawRectangleRounded({screenX + (float)(gameScreenWidth / 2 - 350), screenY + (float)(gameScreenHeight / 2 - 200), 650, 430}, 0.76f, 20, BLACK);
-        const char* welcomeText = "Welcome to Moonlander";
+        const char* welcomeText = "Welcome to Houston Control";
         Vector2 welcomeSize = MeasureTextEx(font, welcomeText, 30, 2);
         DrawTextEx(font, welcomeText, {screenX + (gameScreenWidth / 2 - welcomeSize.x/2), screenY + gameScreenHeight / 2 - 180}, 30, 2, GREEN);
         
