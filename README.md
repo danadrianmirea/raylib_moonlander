@@ -1,10 +1,10 @@
 # Raylib Moonlander
 
-A classic lunar lander game built with raylib where you pilot a spacecraft to land safely on the moon's surface. The game features increasing difficulty levels, realistic physics, and is playable on both desktop and web platforms.
+A classic lunar lander game built with raylib where you pilot a spacecraft to land safely on the moon's surface. The game features increasing difficulty levels, physics, and is playable on both desktop and web platforms.
 
 ## Game Features
 
-- **Realistic Lunar Physics**: Gravity affects your lander as you try to navigate to the landing pad
+- **Physics**: Gravity affects your lander as you try to navigate to the landing pad
 - **Progressive Difficulty**: Increasing gravity and fuel consumption as you advance through levels
 - **Dynamic Terrain**: Randomly generated lunar terrain for each level
 - **Visual Effects**: Explosion animations, thruster effects, and a space background
