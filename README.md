@@ -2,6 +2,8 @@
 
 A classic lunar lander game built with raylib where you pilot a spacecraft to land safely on the moon's surface. The game features increasing difficulty levels, physics, and is playable on both desktop and web platforms.
 
+Play on itch.io: https://adrianmirea.itch.io/
+
 ## Game Features
 
 - **Physics**: Gravity affects your lander as you try to navigate to the landing pad
