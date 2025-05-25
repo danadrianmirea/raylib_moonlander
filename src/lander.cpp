@@ -21,7 +21,7 @@ Lander::Lander(int screenWidth, int screenHeight) {
         #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded thrust music");
         #endif
-        SetMusicVolume(thrustMusic, 1.0f);
+        SetMusicVolume(thrustMusic, 0.33f);
         //SetMusicPitch(thrustMusic, 1.0f);
         // Enable looping of the thrust sound
         thrustMusic.looping = true;
@@ -48,7 +48,7 @@ Lander::Lander(int screenWidth, int screenHeight) {
         #ifdef DEBUG
         TraceLog(LOG_INFO, "Successfully loaded crash sound");
         #endif
-        SetSoundVolume(crashSound, 1.0f);  
+        SetSoundVolume(crashSound, 0.33f);  
     }
 
     texture = LoadTexture("data/lander.png");
