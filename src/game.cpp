@@ -842,7 +842,49 @@ void Game::DrawUI()
 
     const char* fuelText = TextFormat("Fuel: %.1f", lander->GetFuel());
     Vector2 fuelSize = MeasureTextEx(font, fuelText, 25, 2);
-    DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelSize.x - rightMargin), (float)(startY + lineHeight * 2) }, 25, 2, WHITE);
+    Color fuelColor = WHITE;
+    // Check if we're actively using fuel (thrusting or rotating)
+    bool isUsingFuel = false;
+    if (!isMobile) {
+        isUsingFuel = (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W) || IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A) || 
+                      IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) && lander->GetFuel() > 0;
+    } else {
+        // For mobile, check if any touch is active in the thrust or rotation areas
+        int touchCount = GetTouchPointCount();
+        for (int i = 0; i < touchCount; i++) {
+            Vector2 touchPosition = GetTouchPosition(i);
+            float screenWidth = GetScreenWidth();
+            float screenHeight = GetScreenHeight();
+            float gameY = (touchPosition.y - (screenHeight - (gameScreenHeight * screenScale)) * 0.5f) / screenScale;
+            
+            // Check if touch is in thrust area (center of screen) or rotation buttons
+            float buttonRadius = 40.0f;
+            Vector2 leftButtonPos = {buttonRadius * 1.5f, gameScreenHeight / 2.0f};
+            Vector2 rightButtonPos = {gameScreenWidth - buttonRadius * 1.5f, gameScreenHeight / 2.0f};
+            
+            Vector2 leftButtonScreenPos = {
+                (screenWidth - (gameScreenWidth * screenScale)) * 0.5f + leftButtonPos.x * screenScale,
+                (screenHeight - (gameScreenHeight * screenScale)) * 0.5f + leftButtonPos.y * screenScale
+            };
+            
+            Vector2 rightButtonScreenPos = {
+                (screenWidth - (gameScreenWidth * screenScale)) * 0.5f + rightButtonPos.x * screenScale,
+                (screenHeight - (gameScreenHeight * screenScale)) * 0.5f + rightButtonPos.y * screenScale
+            };
+            
+            if (gameY > 100 || // Thrust area
+                CheckCollisionPointCircle(touchPosition, leftButtonScreenPos, buttonRadius * screenScale * 2.5f) ||
+                CheckCollisionPointCircle(touchPosition, rightButtonScreenPos, buttonRadius * screenScale * 2.5f)) {
+                isUsingFuel = true;
+                break;
+            }
+        }
+    }
+    
+    if (isUsingFuel && lander->GetFuel() > 0) {
+        fuelColor = RED;
+    }
+    DrawTextEx(font, fuelText, { (float)(gameScreenWidth - fuelSize.x - rightMargin), (float)(startY + lineHeight * 2) }, 25, 2, fuelColor);
 
     const char* fuelConsumptionText = TextFormat("Fuel Use: %.3f", Lander::fuelConsumption);
     Vector2 fuelConsumptionSize = MeasureTextEx(font, fuelConsumptionText, 25, 2);
@@ -850,11 +892,20 @@ void Game::DrawUI()
 
     const char* velocityText = TextFormat("Velocity X: %.1f Y: %.1f", lander->GetVelocityX(), lander->GetVelocityY());
     Vector2 velocitySize = MeasureTextEx(font, velocityText, 25, 2);
-    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 4) }, 25, 2, WHITE);
+    Color velocityColor = WHITE;
+    if (fabsf(lander->GetVelocityX()) >= Game::velocityLimit || fabsf(lander->GetVelocityY()) >= Game::velocityLimit) {
+        velocityColor = RED;
+    }
+    DrawTextEx(font, velocityText, { (float)(gameScreenWidth - velocitySize.x - rightMargin), (float)(startY + lineHeight * 4) }, 25, 2, velocityColor);
 
     const char* angleText = TextFormat("Angle: %.1f", lander->GetAngle());
     Vector2 angleSize = MeasureTextEx(font, angleText, 25, 2);
-    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 5) }, 25, 2, WHITE);
+    Color angleColor = WHITE;
+    float normalizedAngle = fmodf(lander->GetAngle() + 180.0f, 360.0f) - 180.0f;
+    if (fabsf(normalizedAngle) >= 15.0f) {
+        angleColor = RED;
+    }
+    DrawTextEx(font, angleText, { (float)(gameScreenWidth - angleSize.x - rightMargin), (float)(startY + lineHeight * 5) }, 25, 2, angleColor);
 
     const char* gravityText = TextFormat("Gravity: %.3f", Game::gravity);
     Vector2 gravitySize = MeasureTextEx(font, gravityText, 25, 2);
