@@ -1,0 +1,9 @@
+{
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.installPrefix": "${workspaceFolder}/build/install",
+    "cmake.debugConfig": {
+        "args": [],
+        "cwd": "${workspaceFolder}"
+    }
+} 
