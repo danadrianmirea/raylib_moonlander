@@ -21,6 +21,7 @@ int main()
     InitWindow(gameScreenWidth, gameScreenHeight, "Moonlander");
 #ifndef EMSCRIPTEN_BUILD
     SetWindowState(FLAG_WINDOW_RESIZABLE);
+    ToggleBorderlessWindowed();
 #endif
     SetExitKey(KEY_NULL);
     SetTargetFPS(144);
